@@ -4,7 +4,6 @@ import { Teacher } from '../database/model/users.js';
 import bcrypt from 'bcrypt';
 import { genJwTok } from '../utils/genJwToken.js';
 import { generateToken } from '../utils/genToken.js';
-import passport from 'passport';
 
 export const createTeacher = async (req, res) => {
 	//lets enumerate the sign up
