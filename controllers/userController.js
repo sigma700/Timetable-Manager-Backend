@@ -72,32 +72,3 @@ export const createTeacher = async (req, res) => {
 		console.log(error);
 	}
 };
-
-//authentication using passport js
-
-export const loginTeacher = (req, res, next) => {
-	passport.authenticate('local', (err, teacher, info) => {
-		if (err) return next(err);
-		if (!teacher) {
-			return res.status(401).json({
-				success: false,
-				message: 'Invalid email or password !',
-			});
-		}
-
-		//login successful
-		req.logIn(teacher, (err) => {
-			if (err) return next(err);
-			genJwTok(res, teacher._id);
-
-			return res.status(200).json({
-				success: true,
-				message: 'Successful login in!',
-				user: {
-					_id: teacher._id,
-					email: teacher.email,
-				},
-			});
-		});
-	})(req, res, next);
-};

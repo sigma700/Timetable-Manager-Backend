@@ -1,16 +1,14 @@
 import express from 'express';
-const app = express();
 import 'dotenv/config';
 import { connectDb } from './database/config.js';
-import { userRouter } from './routes/userRoutes.js';
-import passport from 'passport';
+import { router } from './routes/userRoutes.js';
 
+const app = express();
 const port = process.env.PORT;
 
 app.use(express.json());
-app.use('/api', userRouter);
-app.use(passport.initialize());
-app.use(passport.session());
+app.use('/api', router);
+
 connectDb();
 
 app.get('/', (req, res) => {

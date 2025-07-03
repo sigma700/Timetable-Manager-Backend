@@ -1,8 +1,10 @@
 import passport from 'passport';
-import { Teacher } from '../database/model/users';
+import { Teacher } from '../database/model/users.js';
+import { Strategy as LocalStrategy } from 'passport-local';
+import bcrypt from 'bcrypt';
 
 passport.use(
-	new localStrategy({ userNameField: 'email' }, async (email, password, done) => {
+	new LocalStrategy({ userNameField: 'email' }, async (email, password, done) => {
 		try {
 			const teacher = await Teacher.findOne({ email });
 			if (!teacher) {
