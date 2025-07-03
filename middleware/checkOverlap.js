@@ -8,8 +8,8 @@ export const checkTimetableConflict = async (newClass) => {
 		day: newClass.day,
 		$or: [
 			{
-				startTime: { $lt: this.endTime }, //existing class end before the new one ends
-				endTime: { $lt: this.startTime }, //exisisting one end before the new one starts
+				startTime: { $lt: newClass.endTime }, //existing class end before the new one ends
+				endTime: { $lt: newClass.startTime }, //exisisting one end before the new one starts
 			},
 		],
 	});
@@ -18,6 +18,4 @@ export const checkTimetableConflict = async (newClass) => {
 	if (existingClass) {
 		throw new Error(`Conflict with ${existingClass.subject} at ${existingClass.startTime}`);
 	}
-	//in case of no conflict then save
-	next();
 };
