@@ -1,4 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
+import { checkTimetableConflict } from '../../middleware/checkOverlap.js';
 
 const table = new Schema({
 	subject: { type: String, required: true },
@@ -7,7 +8,16 @@ const table = new Schema({
 	endTime: { type: String, required: true },
 	teacher: { type: mongoose.Schema.Types.ObjectId, ref: 'Teacher' },
 });
-
+table.pre('save', async function (next) {
+	try {
+		await checkTimetableConflict(this); //this refers to the one being saved
+		next();
+	} catch (error) {
+		next(error);
+	}
+});
 const Timetable = mongoose.model('Lesson', table);
-await Timetable.save();
+
+//lets use the function to check conflicts before saving to the database
+
 export { Timetable };

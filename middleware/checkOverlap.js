@@ -1,6 +1,6 @@
 //middleware for checking in case of any overlaps in the timetable
 
-import { Timetable } from '../database/model/timetable';
+import { Timetable } from '../database/model/timetable.js';
 
 //findiing any existing classroom on the same Day
 export const checkTimetableConflict = async (newClass) => {
