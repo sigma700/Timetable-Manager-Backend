@@ -4,7 +4,7 @@ import { Teacher } from '../database/model/users.js';
 import bcrypt from 'bcrypt';
 import { genJwTok } from '../utils/genJwToken.js';
 import { generateToken } from '../utils/genToken.js';
-
+// this is the mainframe of the mnin
 export const createTeacher = async (req, res) => {
 	//lets enumerate the sign up
 	const { firstName, lastName, password, email, school, contacts } = req.body;
