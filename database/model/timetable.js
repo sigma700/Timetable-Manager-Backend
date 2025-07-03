@@ -8,5 +8,6 @@ const table = new Schema({
 	teacher: { type: mongoose.Schema.Types.ObjectId, ref: 'Teacher' },
 });
 
-const timeTable = mongoose.model('Lesson', table);
-export { timeTable };
+const Timetable = mongoose.model('Lesson', table);
+await Timetable.save();
+export { Timetable };

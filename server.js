@@ -8,6 +8,8 @@ const port = process.env.PORT;
 
 app.use(express.json());
 app.use('/api', router);
+//middleware for checking overlaps
+app.use('/api/check');
 
 connectDb();
 
