@@ -7,13 +7,14 @@ export const createLesson = async (req, res) => {
 		const teacher = await Teacher.findOne({ firstName: 'Allan' });
 		if (!teacher) throw new Error('Teacher not found !');
 		const newClass = req.body;
+		await checkTimetableConflict(newClass); //makes sure that the code passes through this validation before creation
 		const savedEntry = await Timetable.create(newClass);
-		await checkTimetableConflict(newClass);
+
 		res.status(201).json(savedEntry);
 	} catch (error) {
 		console.log(error);
 
-		res.status(400).json({
+		res.status(500).json({
 			success: false,
 			message: error.message,
 		});

@@ -9,11 +9,9 @@ const table = new Schema({
 	teacher: { type: mongoose.Schema.Types.ObjectId, ref: 'Teacher' },
 });
 table.pre('save', async function (next) {
-	console.log('Saving timetable entry :', this);
-
 	try {
 		await checkTimetableConflict(this); //this refers to the one being saved
-		next();
+		// next();
 	} catch (error) {
 		next(error);
 	}

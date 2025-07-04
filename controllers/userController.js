@@ -30,6 +30,7 @@ export const createTeacher = async (req, res) => {
 			res.status(200).json({
 				success: true,
 				message: 'Successfully logged in !',
+				data: exists,
 			});
 
 			return res.status(400).json({
@@ -61,12 +62,10 @@ export const createTeacher = async (req, res) => {
 				data: teacher,
 			});
 		}
-
-		//lets hash the passwords
 	} catch (error) {
 		res.status(500).json({
 			success: false,
-			message: 'Could not create the teacher as requested !',
+			message: error.message,
 		});
 		console.log(error);
 	}
