@@ -7,6 +7,7 @@ const table = new Schema({
 	startTime: { type: String, required: true, match: /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/ },
 	endTime: { type: String, required: true, match: /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/ },
 	teacher: { type: mongoose.Schema.Types.ObjectId, ref: 'Teacher' },
+	class: { type: String, required: true },
 });
 table.pre('save', async function (next) {
 	try {

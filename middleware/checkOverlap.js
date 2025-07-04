@@ -13,6 +13,7 @@ export const checkTimetableConflict = async (newClass) => {
 	const existingClass = await Timetable.findOne({
 		day: newClass.day,
 		teacher: newClass.teacher,
+		class: newClass.class,
 		$or: [
 			{
 				//case 1 the new class starts before the old one ends
@@ -31,7 +32,7 @@ export const checkTimetableConflict = async (newClass) => {
 	//2.If overlap is found then throw a new error
 	if (existingClass) {
 		throw new Error(
-			`Teacher already has ${existingClass.subject} at ${existingClass.startTime}-${existingClass.endTime}`
+			`Teacher already has ${existingClass.subject} in ${existingClass.class} at ${existingClass.startTime}-${existingClass.endTime}`
 		);
 	}
 };
