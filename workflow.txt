@@ -1,0 +1,28 @@
+This is the place where i will write the workflow and all the logic of the application
+
+1.Actual workflow step by step
+
+ =>Admin side 
+  -Creates admin account using a token that is sent specifically to the admin or else login if there is an existing account.
+  -Take the admin to the dashboard page
+  -The admin (eg the deputy headteacher or the headteacher) shpld be able to upload the actual timetable in form of pdf doc
+  -Should check in case of any overlaps and conflicts on the timetable
+  -Should aso be able to create the actual timetable in the application if there is none in hardcopy
+  -Schema : LessonsSchema : 
+              =>teacher-code: String
+              =>Subject : String
+                TimeStart : Time
+                TimeEnd: Time
+                Classroom : String 
+                Day
+   -Should be able to view the full timetable as a table
+   -Should be able to update the timetable in case of need for future changes
+   -Should be able to delete the whole timetable if need be
+   -Should be able to see the lessons that are underway as of that time (so as to make teacher finding easier)
+
+   DASHBOARD
+   Welcome message
+   timetables created
+   Schedule a demo for personalised walkthrough
+   Section for your timetables
+   Create timetable button

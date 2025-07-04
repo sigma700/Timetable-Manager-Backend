@@ -15,8 +15,8 @@ export const checkTimetableConflict = async (newClass) => {
 		teacher: newClass.teacher,
 		class: newClass.class,
 		$or: [
+			//case 1 the new class starts before the old one ends
 			{
-				//case 1 the new class starts before the old one ends
 				startTime: { $lt: newClass.endTime }, //existing class starts before the new one ends.
 				endTime: { $gt: newClass.startTime }, //exisisting one end before the new one starts.
 			},
@@ -28,6 +28,8 @@ export const checkTimetableConflict = async (newClass) => {
 			},
 		],
 	});
+
+	//buffercheck to ensure that the teacher does not have a lesson that lasts for more than 2 hours
 
 	//2.If overlap is found then throw a new error
 	if (existingClass) {
