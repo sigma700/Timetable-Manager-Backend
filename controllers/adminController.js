@@ -1,5 +1,6 @@
 //lets create an endpoint to handle input of all the teachers in the school
 
+import { ClassData } from '../database/model/classData.js';
 import { Subject } from '../database/model/subjects.js';
 import { ListOfTechers } from '../database/model/teachers.js';
 
@@ -34,6 +35,25 @@ export const listSubjects = async (req, res) => {
 		});
 	} catch (error) {
 		console.log(error.message);
+		res.status(500).json({
+			success: false,
+			message: error.message,
+		});
+	}
+};
+
+export const listClassData = async (req, res) => {
+	try {
+		//lets get all the data form the req.body
+		const { type, levels, labels } = req.body;
+		const createdClassData = await ClassData.create({ type, levels, labels });
+		res.status(201).json({
+			success: true,
+			message: `${createdClassData.length} data added to the db !`,
+		});
+	} catch (error) {
+		console.log(error.message);
+
 		res.status(500).json({
 			success: false,
 			message: error.message,
