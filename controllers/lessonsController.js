@@ -1,5 +1,5 @@
 import { Timetable } from '../database/model/timetable.js';
-import { Teacher } from '../database/model/users.js';
+import { User } from '../database/model/users.js';
 import { checkTimetableConflict } from '../middleware/checkOverlap.js';
 
 export const createLesson = async (req, res) => {

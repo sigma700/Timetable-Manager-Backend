@@ -1,19 +1,40 @@
 //lets create an endpoint to handle input of all the teachers in the school
 
 import { ClassData } from '../database/model/classData.js';
+import { School } from '../database/model/school.js';
 import { Subject } from '../database/model/subjects.js';
 import { ListOfTechers } from '../database/model/teachers.js';
 import { Timetable } from '../database/model/timetable.js';
 import { generateTimetable } from '../service/genTable.js';
 
-export const listTeachers = async (req, res) => {
+//lets also list our school
+
+export const listSchool = async (req, res) => {
 	try {
-		const { names } = req.body;
-		const newTeachers = names.map((name) => ({ name }));
-		const createdTeachers = await ListOfTechers.insertMany(newTeachers);
+		const { name } = req.body;
+		//create the school
+		const createdSchool = await School.create({ name });
 		res.status(201).json({
 			success: true,
-			message: `${names.length} teachers added sucessfully !`,
+			message: 'Created Successfully !',
+			data: createdSchool,
+		});
+	} catch (error) {}
+};
+
+export const listTeachers = async (req, res) => {
+	try {
+		const { schoolId } = req.params;
+		const { name, subjects } = req.body;
+
+		const createdTeachers = await ListOfTechers.create({
+			name,
+			school: schoolId,
+			subjects,
+		});
+		res.status(201).json({
+			success: true,
+			message: `${name.length} teachers added sucessfully !`,
 			data: createdTeachers,
 		});
 	} catch (error) {
@@ -27,12 +48,15 @@ export const listTeachers = async (req, res) => {
 
 export const listSubjects = async (req, res) => {
 	try {
-		const { subjects } = req.body;
-		const newSubjects = subjects.map((subs) => ({ subs }));
+		const { schoolId } = req.params;
+		const { names } = req.body;
+		//automatically asign the school id to each subject
+		const newSubjects = names.map((name) => ({ name: name.trim(), school: schoolId }));
+
 		const createdSubjects = await Subject.insertMany(newSubjects);
 		res.status(201).json({
 			success: true,
-			message: `Created ${subjects.length} subjects !`,
+			message: `Created ${names.length} subjects !`,
 			data: createdSubjects,
 		});
 	} catch (error) {

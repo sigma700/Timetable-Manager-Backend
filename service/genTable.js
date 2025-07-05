@@ -1,8 +1,8 @@
 //backbone of the project
 
-import { ClassData } from '../database/model/classData';
-import { Subject } from '../database/model/subjects';
-import { ListOfTechers } from '../database/model/teachers';
+import { ClassData } from '../database/model/classData.js';
+import { Subject } from '../database/model/subjects.js';
+import { ListOfTechers } from '../database/model/teachers.js';
 
 export const generateTimetable = async (schoolId) => {
 	//getting all the neccessary data that already exists from user inputs
@@ -12,7 +12,7 @@ export const generateTimetable = async (schoolId) => {
 
 	//creating empty timetable structure
 
-	const days = ['MOnday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+	const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 	const periodsPerDay = 8;
 	const timetable = [];
 

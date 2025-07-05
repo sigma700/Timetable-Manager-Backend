@@ -1,7 +1,17 @@
-import mongoose, { Schema } from 'mongoose';
+import mongoose, { mongo, Schema } from 'mongoose';
 
 const subjectSchema = new Schema({
-	subs: { type: String, unique: true },
+	school: {
+		type: mongoose.Schema.Types.ObjectId,
+		ref: 'School',
+		required: true,
+	},
+	name: {
+		type: String,
+		unique: true,
+		trim: true,
+		required: true,
+	},
 });
 
-export const Subject = mongoose.model('all-subject', subjectSchema);
+export const Subject = mongoose.model('Subject', subjectSchema);
