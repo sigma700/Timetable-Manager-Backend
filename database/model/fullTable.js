@@ -6,7 +6,7 @@ const timetableSchema = new Schema(
 		name: { type: String, required: true },
 		school: { type: mongoose.Schema.Types.ObjectId, ref: 'School', required: true },
 
-		// Configuration (provided by user)
+		// Configuration by the user according to their pref settings
 		config: {
 			periodsPerDay: { type: Number, default: 8 },
 			periodDuration: { type: Number, default: 45 }, // minutes

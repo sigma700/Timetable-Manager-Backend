@@ -3,6 +3,8 @@
 import { ClassData } from '../database/model/classData.js';
 import { Subject } from '../database/model/subjects.js';
 import { ListOfTechers } from '../database/model/teachers.js';
+import { Timetable } from '../database/model/timetable.js';
+import { generateTimetable } from '../service/genTable.js';
 
 export const listTeachers = async (req, res) => {
 	try {
@@ -54,6 +56,34 @@ export const listClassData = async (req, res) => {
 			success: true,
 			message: `${createdClassData.length} data added to the db !`,
 			data: createdClassData,
+		});
+	} catch (error) {
+		console.log(error.message);
+
+		res.status(500).json({
+			success: false,
+			message: error.message,
+		});
+	}
+};
+
+//not to generate the actual timetable
+
+export const genTable = async (req, res) => {
+	try {
+		const schoolId = req.params;
+		const timetable = await generateTimetable(schoolId);
+
+		//save to db
+		const createdTimetable = await Timetable.create({
+			school: schoolId,
+			schedule: timetable,
+		});
+
+		res.status(201).json({
+			success: true,
+			message: 'Created the timetable !',
+			data: createdTimetable,
 		});
 	} catch (error) {
 		console.log(error.message);
