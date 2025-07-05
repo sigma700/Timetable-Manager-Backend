@@ -1,6 +1,6 @@
 //here is where we perform all the logical for designing all the endpoints
 
-import { Teacher } from '../database/model/users.js';
+import { User } from '../database/model/users.js';
 import bcrypt from 'bcrypt';
 import { genJwTok } from '../utils/genJwToken.js';
 import { generateToken } from '../utils/genToken.js';
@@ -16,7 +16,7 @@ export const createTeacher = async (req, res) => {
 			});
 		}
 
-		const exists = await Teacher.findOne({ email: email });
+		const exists = await User.findOne({ email: email });
 		//created this so as to remove the number of fetch requests in the application
 		if (exists) {
 			const isPassValid = await bcrypt.compare(password, exists.password);
@@ -42,7 +42,7 @@ export const createTeacher = async (req, res) => {
 			const verToken = generateToken();
 
 			//creation of the user
-			const teacher = await Teacher.create({
+			const teacher = await User.create({
 				firstName,
 				lastName,
 				email,
