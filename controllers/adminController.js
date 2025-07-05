@@ -46,10 +46,14 @@ export const listClassData = async (req, res) => {
 	try {
 		//lets get all the data form the req.body
 		const { type, levels, labels } = req.body;
-		const createdClassData = await ClassData.create({ type, levels, labels });
+		//in case user inputs the labels in lowercase then we convert it to uppercase yk
+		const convertedLabels = labels.map((label) => String(label).toUpperCase());
+
+		const createdClassData = await ClassData.create({ type, levels, labels: convertedLabels });
 		res.status(201).json({
 			success: true,
 			message: `${createdClassData.length} data added to the db !`,
+			data: createdClassData,
 		});
 	} catch (error) {
 		console.log(error.message);

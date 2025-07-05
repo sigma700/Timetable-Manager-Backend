@@ -7,7 +7,7 @@ const clasRomsSchema = new Schema({
 		min: { type: String },
 		max: { type: String },
 	}, //max and min
-	labels: { type: String, required: true, unique: true },
+	labels: { type: Array, required: true },
 });
 
 const ClassData = mongoose.model('classe', clasRomsSchema);
