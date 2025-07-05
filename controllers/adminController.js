@@ -25,11 +25,11 @@ export const listTeachers = async (req, res) => {
 export const listSubjects = async (req, res) => {
 	try {
 		const { subjects } = req.body;
-		const newSubjects = subjects.map((name) => ({ name })); //this not like not like that
+		const newSubjects = subjects.map((subs) => ({ subs }));
 		const createdSubjects = await Subject.insertMany(newSubjects);
 		res.status(201).json({
 			success: true,
-			message: `Created ${createdSubjects.length} subjects !`,
+			message: `Created ${subjects.length} subjects !`,
 			data: createdSubjects,
 		});
 	} catch (error) {
