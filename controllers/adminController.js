@@ -25,16 +25,17 @@ export const listSchool = async (req, res) => {
 export const listTeachers = async (req, res) => {
 	try {
 		const { schoolId } = req.params;
-		const { name, subjects } = req.body;
+		const { firstName, lastName, subjects } = req.body;
 
 		const createdTeachers = await ListOfTechers.create({
-			name,
+			firstName,
+			lastName,
 			school: schoolId,
 			subjects,
 		});
 		res.status(201).json({
 			success: true,
-			message: `${name.length} teachers added sucessfully !`,
+			message: 'Successfully created teacher !',
 			data: createdTeachers,
 		});
 	} catch (error) {
@@ -71,11 +72,17 @@ export const listSubjects = async (req, res) => {
 export const listClassData = async (req, res) => {
 	try {
 		//lets get all the data form the req.body
+		const { schoolId } = req.params;
 		const { type, levels, labels } = req.body;
 		//in case user inputs the labels in lowercase then we convert it to uppercase yk
 		const convertedLabels = labels.map((label) => String(label).toUpperCase());
 
-		const createdClassData = await ClassData.create({ type, levels, labels: convertedLabels });
+		const createdClassData = await ClassData.create({
+			type,
+			levels,
+			labels: convertedLabels,
+			school: schoolId,
+		});
 		res.status(201).json({
 			success: true,
 			message: `${createdClassData.length} data added to the db !`,

@@ -6,7 +6,8 @@ const teacherSchema = new Schema({
 		ref: 'School',
 		required: true,
 	},
-	name: { type: String, required: true, unique: true },
+	firstName: { type: String, required: true, unique: true },
+	lastName: { type: String, required: true, unique: true },
 	// _id: { type: String, required: true },
 	subjects: [
 		{
