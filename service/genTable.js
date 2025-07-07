@@ -1,5 +1,8 @@
 import mongoose from 'mongoose';
 import moment from 'moment';
+import { ClassData } from '../database/model/classData.js';
+import { Subject } from '../database/model/subjects.js';
+import { ListOfTechers } from '../database/model/teachers.js';
 
 // Helper function to calculate time
 function calculateTime(baseTime, minutesToAdd) {
@@ -9,16 +12,15 @@ function calculateTime(baseTime, minutesToAdd) {
 // Main timetable generation logic
 export const generateSimpleTimetable = async (schoolId) => {
 	//getting all data from the database
-	const classrooms = await mongoose.model('ClassData').find({ school: schoolId });
-	const subjects = await mongoose.model('Subject').find({ school: schoolId });
-	const teachers = await mongoose.model('ListOfTeachers').find({ school: schoolId });
+	const classrooms = await ClassData.find({ school: schoolId });
+	const subjects = await Subject.find({ school: schoolId });
+	const teachers = await ListOfTechers.find({ school: schoolId });
 
 	// 2. Create basic timetable structure
 	const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 	const periodsPerDay = 8; // 8 periods per day
 	const timetable = [];
-
-	// 3. Create empty timetable slots
+	//making the empty timetable slots
 	for (const day of days) {
 		const daySchedule = {
 			day,

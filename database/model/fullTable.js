@@ -1,3 +1,5 @@
+import mongoose, { Schema } from 'mongoose';
+
 const timetableSchema = new Schema(
 	{
 		name: { type: String, required: true },
@@ -16,7 +18,7 @@ const timetableSchema = new Schema(
 		},
 		schedule: [
 			{
-				day: { type: String, enum: DAYS, required: true },
+				day: { type: String, required: true },
 				periods: [
 					{
 						periodNumber: { type: Number, required: true },
@@ -41,3 +43,5 @@ const timetableSchema = new Schema(
 	},
 	{ timestamps: true }
 );
+
+export const GenTable = mongoose.model('Timetable', timetableSchema);

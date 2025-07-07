@@ -1,10 +1,10 @@
 //lets create an endpoint to handle input of all the teachers in the school
 
 import { ClassData } from '../database/model/classData.js';
+import { GenTable } from '../database/model/fullTable.js';
 import { School } from '../database/model/school.js';
 import { Subject } from '../database/model/subjects.js';
 import { ListOfTechers } from '../database/model/teachers.js';
-import { Timetable } from '../database/model/timetable.js';
 import { generateSimpleTimetable } from '../service/genTable.js';
 
 //lets also list our school
