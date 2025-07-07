@@ -13,6 +13,7 @@ const clasRomsSchema = new Schema({
 		max: { type: String, required: true },
 	}, //max and min
 	labels: { type: Array, required: true },
+	isOccupied: { type: Boolean },
 });
 
 const ClassData = mongoose.model('classe', clasRomsSchema);

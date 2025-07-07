@@ -1,5 +1,6 @@
 //backbone of the project
 
+import moment from 'moment';
 import { ClassData } from '../database/model/classData.js';
 import { Subject } from '../database/model/subjects.js';
 import { ListOfTechers } from '../database/model/teachers.js';
@@ -27,8 +28,8 @@ export const generateTimetable = async (schoolId) => {
 		for (let i = 0; i < periodsPerDay; i++) {
 			daySchedule.periods.push({
 				periodNumber: i + 1,
-				startTime: '',
-				endTime: '',
+				startTime: '18:00',
+				endTime: '19:00',
 				subject: null,
 				teacher: null,
 				classroom: null,

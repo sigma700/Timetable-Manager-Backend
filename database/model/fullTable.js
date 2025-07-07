@@ -33,9 +33,9 @@ const timetableSchema = new Schema(
 						periodNumber: Number,
 						startTime: String, // "HH:MM"
 						endTime: String,
-						subject: { type: mongoose.Schema.Types.ObjectId, ref: 'all-subjects' },
-						teacher: { type: mongoose.Schema.Types.ObjectId, ref: 'all-teachers' },
-						classroom: { type: mongoose.Schema.Types.ObjectId, ref: 'classes' },
+						subject: { type: mongoose.Schema.Types.ObjectId, ref: 'Subject' },
+						teacher: { type: mongoose.Schema.Types.ObjectId, ref: 'ListOfTeachers' },
+						classroom: { type: mongoose.Schema.Types.ObjectId, ref: 'ClassData' },
 					},
 				],
 			},
