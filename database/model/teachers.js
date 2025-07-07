@@ -8,10 +8,9 @@ const teacherSchema = new Schema({
 	},
 	firstName: { type: String, required: true, unique: true },
 	lastName: { type: String, required: true, unique: true },
-	// _id: { type: String, required: true },
 	subjects: [
 		{
-			type: mongoose.Schema.Types.ObjectId,
+			type: mongoose.Schema.Types.String,
 			ref: 'Subject',
 		},
 	],
