@@ -1,16 +1,11 @@
-import mongoose, { Schema } from 'mongoose';
-
-// models/Timetable.js
 const timetableSchema = new Schema(
 	{
 		name: { type: String, required: true },
 		school: { type: mongoose.Schema.Types.ObjectId, ref: 'School', required: true },
-
-		// Configuration by the user according to their pref settings
 		config: {
 			periodsPerDay: { type: Number, default: 8 },
-			periodDuration: { type: Number, default: 45 }, // minutes
-			startTime: { type: String, default: '08:00' }, // First period start
+			periodDuration: { type: Number, default: 45 },
+			startTime: { type: String, default: '08:00' },
 			breaks: [
 				{
 					name: String,
@@ -19,34 +14,26 @@ const timetableSchema = new Schema(
 				},
 			],
 		},
-
-		// Auto-generated timetable
 		schedule: [
 			{
-				day: {
-					type: String,
-					enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
-					required: true,
-				},
+				day: { type: String, enum: DAYS, required: true },
 				periods: [
 					{
-						periodNumber: Number,
-						startTime: String, // "HH:MM"
-						endTime: String,
+						periodNumber: { type: Number, required: true },
+						startTime: { type: String, required: true },
+						endTime: { type: String, required: true },
 						subject: { type: mongoose.Schema.Types.ObjectId, ref: 'Subject' },
-						teacher: { type: mongoose.Schema.Types.ObjectId, ref: 'ListOfTeachers' },
-						classroom: { type: mongoose.Schema.Types.ObjectId, ref: 'ClassData' },
+						teacher: { type: mongoose.Schema.Types.ObjectId, ref: 'Teacher' }, // Changed from ListOfTeachers
+						classroom: { type: mongoose.Schema.Types.ObjectId, ref: 'Classroom' }, // Changed from ClassData
 					},
 				],
 			},
 		],
-
-		// Constraints
 		constraints: {
 			teacherMinPeriods: Number,
 			subjectWeeklyFrequency: [
 				{
-					subject: { type: mongoose.Schema.Types.ObjectId, ref: 'all-subjects' },
+					subject: { type: mongoose.Schema.Types.ObjectId, ref: 'Subject' }, // Changed from all-subjects
 					requiredPeriods: Number,
 				},
 			],
@@ -54,5 +41,3 @@ const timetableSchema = new Schema(
 	},
 	{ timestamps: true }
 );
-
-export const GenTable = new mongoose.model('timetable', timetableSchema);

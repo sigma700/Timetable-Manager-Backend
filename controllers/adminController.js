@@ -5,7 +5,7 @@ import { School } from '../database/model/school.js';
 import { Subject } from '../database/model/subjects.js';
 import { ListOfTechers } from '../database/model/teachers.js';
 import { Timetable } from '../database/model/timetable.js';
-import { generateTimetable } from '../service/genTable.js';
+import { generateSimpleTimetable } from '../service/genTable.js';
 
 //lets also list our school
 
@@ -112,25 +112,27 @@ export const listClassData = async (req, res) => {
 
 //not to generate the actual timetable
 
-export const genTable = async (req, res) => {
+export const generateTimetableHandler = async (req, res) => {
 	try {
 		const { schoolId } = req.params;
-		const timetable = await generateTimetable(schoolId);
+		const { name, config } = req.body;
 
-		//save to db
-		const createdTimetable = await Timetable.create({
+		// Generate timetable
+		const schedule = await generateSimpleTimetable(schoolId, config);
+
+		// Save to database
+		const timetable = await GenTable.create({
+			name,
 			school: schoolId,
-			schedule: timetable,
+			config,
+			schedule,
 		});
 
 		res.status(201).json({
 			success: true,
-			message: 'Created the timetable !',
-			data: createdTimetable,
+			data: timetable,
 		});
 	} catch (error) {
-		console.log(error.message);
-
 		res.status(500).json({
 			success: false,
 			message: error.message,

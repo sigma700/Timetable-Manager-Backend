@@ -1,35 +1,36 @@
-//backbone of the project
-
+import mongoose from 'mongoose';
 import moment from 'moment';
-import { ClassData } from '../database/model/classData.js';
-import { Subject } from '../database/model/subjects.js';
-import { ListOfTechers } from '../database/model/teachers.js';
 
-export const generateTimetable = async (schoolId) => {
-	//getting all the neccessary data that already exists from user inputs
-	const classrooms = await ClassData.find({ school: schoolId });
-	const subjects = await Subject.find({ school: schoolId });
-	const teachers = await ListOfTechers.find({ school: schoolId });
+// Helper function to calculate time
+function calculateTime(baseTime, minutesToAdd) {
+	return moment(baseTime, 'HH:mm').add(minutesToAdd, 'minutes').format('HH:mm');
+}
 
-	//creating empty timetable structure
+// Main timetable generation logic
+export const generateSimpleTimetable = async (schoolId) => {
+	//getting all data from the database
+	const classrooms = await mongoose.model('ClassData').find({ school: schoolId });
+	const subjects = await mongoose.model('Subject').find({ school: schoolId });
+	const teachers = await mongoose.model('ListOfTeachers').find({ school: schoolId });
 
+	// 2. Create basic timetable structure
 	const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-	const periodsPerDay = 8;
+	const periodsPerDay = 8; // 8 periods per day
 	const timetable = [];
 
+	// 3. Create empty timetable slots
 	for (const day of days) {
 		const daySchedule = {
 			day,
 			periods: [],
 		};
 
-		//creating empty periods for this day
-
+		// Add empty periods for each day
 		for (let i = 0; i < periodsPerDay; i++) {
 			daySchedule.periods.push({
 				periodNumber: i + 1,
-				startTime: '18:00',
-				endTime: '19:00',
+				startTime: calculateTime('08:00', i * 45), // 45 minute periods
+				endTime: calculateTime('08:00', (i + 1) * 45),
 				subject: null,
 				teacher: null,
 				classroom: null,
@@ -38,43 +39,33 @@ export const generateTimetable = async (schoolId) => {
 		timetable.push(daySchedule);
 	}
 
-	//asignment logic
+	// 4. Assign subjects to periods (simple version)
+	let subjectIndex = 0;
+	let teacherIndex = 0;
+	let classroomIndex = 0;
 
-	for (const subject of subjects) {
-		//lets find a teacher who teaches this subject
-		const availableTeachers = teachers.filter((teacher) => teacher.subjects.includes(subject._id));
-
-		if (availableTeachers.length === 0) continue;
-
-		for (const daySchedule of timetable) {
-			//finding an empty period in this day
-			const emptyPeriod = daySchedule.periods.find((period) => period.subject === null);
-			if (!emptyPeriod) continue;
-			const availableClassrooms = classrooms.find((classroom) => !classroom.isOccupied);
-			if (!availableClassrooms) continue;
-
-			//assign to this period
-			const teacher = availableTeachers[0]; //pick the first available teacher
-			emptyPeriod.subject = subject._id;
-			emptyPeriod.teacher = teacher._id;
-			emptyPeriod.classroom = availableClassrooms._id;
-
-			availableClassrooms.isOccupied = true;
-		}
-		//finding available classrooms
-
-		//calculate times for each period
-
-		const periodDuration = 45;
-		const startTime = '08:00';
-
-		for (const daySchedule of timetable) {
-			let currentTime = moment(startTime, 'HH:mm');
-			for (const period of daySchedule.periods) {
-				period.startTime = currentTime.format('HH:mm');
-				currentTime.add(periodDuration, 'minutes');
-				period.endTime = currentTime.format('HH:mm');
+	for (const day of timetable) {
+		for (const period of day.periods) {
+			// Only fill if we have data available
+			if (subjectIndex < subjects.length) {
+				period.subject = subjects[subjectIndex]._id;
+				subjectIndex++;
 			}
+
+			if (teacherIndex < teachers.length) {
+				period.teacher = teachers[teacherIndex]._id;
+				teacherIndex++;
+			}
+
+			if (classroomIndex < classrooms.length) {
+				period.classroom = classrooms[classroomIndex]._id;
+				classroomIndex++;
+			}
+
+			// Reset indexes if we reach the end
+			if (subjectIndex >= subjects.length) subjectIndex = 0;
+			if (teacherIndex >= teachers.length) teacherIndex = 0;
+			if (classroomIndex >= classrooms.length) classroomIndex = 0;
 		}
 	}
 

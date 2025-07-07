@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import {
-	genTable,
+	generateTimetableHandler,
 	listClassData,
 	listSchool,
 	listSubjects,
@@ -12,7 +12,7 @@ const dataRouter = Router();
 dataRouter.post('/list-teachers/:schoolId', listTeachers);
 dataRouter.post('/list-subjects/:schoolId', listSubjects);
 dataRouter.post('/list-classData/:schoolId', listClassData);
-dataRouter.post('/gen-table/:schoolId', genTable);
+dataRouter.post('/gen-table/:schoolId', generateTimetableHandler);
 dataRouter.post('/list-school', listSchool);
 
 export { dataRouter };
