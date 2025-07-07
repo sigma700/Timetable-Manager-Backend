@@ -10,15 +10,15 @@ import calculateTime from '../utils/calculateTime.js';
 // Main timetable generation logic
 export const generateSimpleTimetable = async (schoolId) => {
 	//getting all data from the database
-	const classrooms = await ClassData.find({ school: schoolId });
-	const subjects = await Subject.find({ school: schoolId });
-	const teachers = await ListOfTechers.find({ school: schoolId });
+	const classrooms = await ClassData.find({ school: schoolId }); //all classes in the school
+	const subjects = await Subject.find({ school: schoolId }); //all the subjeccts taught in the school
+	const teachers = await ListOfTechers.find({ school: schoolId }); //all the teachers in the school
 
-	// 2. Create basic timetable structure
+	//Creating the empty timetable
 	const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-	const periodsPerDay = 8; // 8 periods per day
+	const periodsPerDay = 8; // 8 periods per day by default
 	const timetable = [];
-	//making the empty timetable slots
+	//making the empty timetable slots or in other terms creating the empty timetable structure
 	for (const day of days) {
 		const daySchedule = {
 			day,
@@ -46,28 +46,29 @@ export const generateSimpleTimetable = async (schoolId) => {
 
 	for (const day of timetable) {
 		for (const period of day.periods) {
-			// Only fill if we have data available
+			// Assign subject if available
 			if (subjectIndex < subjects.length) {
 				period.subject = subjects[subjectIndex]._id;
 				subjectIndex++;
 			}
 
+			// Assign teacher if available
 			if (teacherIndex < teachers.length) {
 				period.teacher = teachers[teacherIndex]._id;
 				teacherIndex++;
 			}
 
+			// Assign classroom if available
 			if (classroomIndex < classrooms.length) {
 				period.classroom = classrooms[classroomIndex]._id;
 				classroomIndex++;
 			}
 
-			// Reset indexes if we reach the end
+			// Reset counters if we run out of items
 			if (subjectIndex >= subjects.length) subjectIndex = 0;
 			if (teacherIndex >= teachers.length) teacherIndex = 0;
 			if (classroomIndex >= classrooms.length) classroomIndex = 0;
 		}
 	}
-
 	return timetable;
 };
