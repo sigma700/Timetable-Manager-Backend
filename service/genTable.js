@@ -4,6 +4,7 @@ import { ClassData } from '../database/model/classData.js';
 import { Subject } from '../database/model/subjects.js';
 import { ListOfTechers } from '../database/model/teachers.js';
 import calculateTime from '../utils/calculateTime.js';
+import getNameFromId from '../utils/lookUp.js';
 
 // Helper function to calculate time
 
@@ -46,7 +47,6 @@ export const generateSimpleTimetable = async (schoolId) => {
 
 	for (const day of timetable) {
 		for (const period of day.periods) {
-			// Assign subject if available
 			if (subjectIndex < subjects.length) {
 				period.subject = subjects[subjectIndex]._id;
 				subjectIndex++;
