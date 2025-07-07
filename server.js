@@ -2,14 +2,14 @@ import express from 'express';
 import 'dotenv/config';
 import { connectDb } from './database/config.js';
 import { router } from './routes/userRoutes.js';
-import { lessonRouter } from './routes/lessonsRoute.js';
+// import { lessonRouter } from './routes/lessonsRoute.js';
 import { dataRouter } from './routes/dataRouter.js';
 
 const app = express();
 const port = process.env.PORT;
 
 app.use(express.json());
-app.use('/api/check', lessonRouter);
+// app.use('/api/check', lessonRouter);
 app.use('/api', router, dataRouter);
 //middleware for checking overlaps
 

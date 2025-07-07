@@ -114,12 +114,12 @@ export const listClassData = async (req, res) => {
 
 export const genTable = async (req, res) => {
 	try {
-		// const schoolId = req.params;
-		const timetable = await generateTimetable('686939ac65244f797d3334b7');
+		const { schoolId } = req.params;
+		const timetable = await generateTimetable(schoolId);
 
 		//save to db
 		const createdTimetable = await Timetable.create({
-			school: '686939ac65244f797d3334b7',
+			school: schoolId,
 			schedule: timetable,
 		});
 

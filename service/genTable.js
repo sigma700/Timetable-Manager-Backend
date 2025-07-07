@@ -50,18 +50,18 @@ export const generateTimetable = async (schoolId) => {
 			//finding an empty period in this day
 			const emptyPeriod = daySchedule.periods.find((period) => period.subject === null);
 			if (!emptyPeriod) continue;
+			const availableClassrooms = classrooms.find((classroom) => !classroom.isOccupied);
+			if (!availableClassrooms) continue;
+
+			//assign to this period
+			const teacher = availableTeachers[0]; //pick the first available teacher
+			emptyPeriod.subject = subject._id;
+			emptyPeriod.teacher = teacher._id;
+			emptyPeriod.classroom = availableClassrooms._id;
+
+			availableClassrooms.isOccupied = true;
 		}
 		//finding available classrooms
-		const availableClassrooms = classrooms.find((classroom) => !classroom.isOccupied);
-		if (!availableClassrooms) continue;
-
-		//assign to this period
-		const teacher = availableTeachers[0]; //pick the first available teacher
-		emptyPeriod.subject = subject._id;
-		emptyPeriod.teacher = teacher._id;
-		emptyPeriod.classroom = availableClassrooms._id;
-
-		availableClassrooms.isOccupied = true;
 
 		//calculate times for each period
 
