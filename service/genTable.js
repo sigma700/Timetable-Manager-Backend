@@ -3,11 +3,9 @@ import moment from 'moment';
 import { ClassData } from '../database/model/classData.js';
 import { Subject } from '../database/model/subjects.js';
 import { ListOfTechers } from '../database/model/teachers.js';
+import calculateTime from '../utils/calculateTime.js';
 
 // Helper function to calculate time
-function calculateTime(baseTime, minutesToAdd) {
-	return moment(baseTime, 'HH:mm').add(minutesToAdd, 'minutes').format('HH:mm');
-}
 
 // Main timetable generation logic
 export const generateSimpleTimetable = async (schoolId) => {
@@ -31,7 +29,7 @@ export const generateSimpleTimetable = async (schoolId) => {
 		for (let i = 0; i < periodsPerDay; i++) {
 			daySchedule.periods.push({
 				periodNumber: i + 1,
-				startTime: calculateTime('08:00', i * 45), // 45 minute periods
+				startTime: calculateTime('08:00', i * 45),
 				endTime: calculateTime('08:00', (i + 1) * 45),
 				subject: null,
 				teacher: null,
