@@ -22,10 +22,21 @@ export const listSchool = async (req, res) => {
 	} catch (error) {}
 };
 
+//done
+
 export const listTeachers = async (req, res) => {
 	try {
 		const { schoolId } = req.params;
 		const { firstName, lastName, subjects } = req.body;
+
+		const exisisting = await ListOfTechers.findOne({ firstName, lastName });
+
+		if (exisisting) {
+			return res.status(400).json({
+				success: false,
+				message: 'Teacher already exists !',
+			});
+		}
 
 		const createdTeachers = await ListOfTechers.create({
 			firstName,
@@ -47,6 +58,7 @@ export const listTeachers = async (req, res) => {
 	}
 };
 
+//done
 export const listSubjects = async (req, res) => {
 	try {
 		const { schoolId } = req.params;
@@ -68,7 +80,7 @@ export const listSubjects = async (req, res) => {
 		});
 	}
 };
-
+//done
 export const listClassData = async (req, res) => {
 	try {
 		//lets get all the data form the req.body
@@ -85,7 +97,7 @@ export const listClassData = async (req, res) => {
 		});
 		res.status(201).json({
 			success: true,
-			message: `${createdClassData.length} data added to the db !`,
+			message: `${createdClassData.length} classes added to the db !`,
 			data: createdClassData,
 		});
 	} catch (error) {
