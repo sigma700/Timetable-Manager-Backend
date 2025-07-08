@@ -18,7 +18,7 @@ const timetableSchema = new Schema(
 		},
 		schedule: [
 			{
-				day: { type: String, required: true },
+				day: { type: String },
 				periods: [
 					{
 						periodNumber: { type: Number, required: true },
