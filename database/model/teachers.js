@@ -14,6 +14,7 @@ const teacherSchema = new Schema({
 			ref: 'Subject',
 		},
 	],
+	classes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'ClassData' }],
 });
 
 export const ListOfTechers = mongoose.model('teacher', teacherSchema);
