@@ -10,7 +10,7 @@ const teacherSchema = new Schema({
 	lastName: { type: String, required: true },
 	subjects: [
 		{
-			type: mongoose.Schema.Types.String,
+			type: mongoose.Schema.Types.ObjectId,
 			ref: 'Subject',
 		},
 	],
