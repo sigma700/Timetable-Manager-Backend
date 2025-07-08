@@ -7,6 +7,7 @@ const clasRomsSchema = new Schema({
 		ref: 'School',
 		required: true,
 	},
+	name: { type: String },
 	type: { type: String, required: true, unique: true, enum: validTypes }, //eg if it is in form of grades or classes or forms
 	levels: {
 		min: { type: String, required: true },
@@ -14,8 +15,9 @@ const clasRomsSchema = new Schema({
 	}, //max and min
 	labels: { type: Array, required: true },
 	isOccupied: { type: Boolean },
+	subjects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Subject' }],
 });
-
+clasRomsSchema.index(({ school: 1, name: 1 }, { unique: true }));
 const ClassData = mongoose.model('classe', clasRomsSchema);
 
 export { ClassData };
