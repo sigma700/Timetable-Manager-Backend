@@ -18,7 +18,7 @@ const clasRomsSchema = new Schema({
 	subjects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Subject' }],
 });
 clasRomsSchema.index(({ school: 1, name: 1 }, { unique: true }));
-const ClassData = mongoose.model('classe', clasRomsSchema);
+const ClassData = mongoose.model('ClassData', clasRomsSchema);
 
 export { ClassData };
 
