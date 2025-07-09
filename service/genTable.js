@@ -24,9 +24,10 @@ function findAvailableTeacher(
 	// First: Try to find teacher assigned to this class
 	for (const teacher of teachers) {
 		const teacherId = teacher._id.toString();
-		const availabilityKey = `${teacherId}-${dayIndex}-${periodIndex}`;
+		const availabilityKey = `${teacherId}-${dayIndex}-${periodIndex}`; //if the teacher is available i want to have a unique key for them
+		// console.log(availabilityKey);
 
-		const canTeach = teacher.subjects.some((s) => s._id.toString() === subjectId);
+		const canTeach = teacher.subjects.some((s) => s._id.toString() === subjectId); //pointblank (s) stands for subject for short
 		const assignedToClass = teacher.classes.some((c) => c._id.toString() === classroomId);
 		const isAvailable = !teacherAvailability.has(availabilityKey);
 
@@ -35,7 +36,7 @@ function findAvailableTeacher(
 		}
 	}
 
-	// Second: Try any teacher who can teach the subject
+	//try any of the teacher who can teach the subject
 	for (const teacher of teachers) {
 		const teacherId = teacher._id.toString();
 		const availabilityKey = `${teacherId}-${dayIndex}-${periodIndex}`;
@@ -48,13 +49,13 @@ function findAvailableTeacher(
 		}
 	}
 
-	return null; // No available teacher found
+	return null; // No available teacher found to avoid continual of the creation logic
 }
 
 // Main function to generate timetable
 export const generateSimpleTimetable = async (schoolId, config = {}) => {
 	try {
-		// Get all classrooms for this school
+		// Get all classrooms for this school ith the id of ykk.....
 		const classrooms = await ClassData.find({ school: schoolId })
 			.populate('subjects', '_id name')
 			.lean();
@@ -65,18 +66,16 @@ export const generateSimpleTimetable = async (schoolId, config = {}) => {
 			.populate('classes', '_id name')
 			.lean();
 
-		// Track teacher availability (prevents double-booking)
 		const teacherAvailability = new Set();
 
-		// Create timetable for each classroom
+		// Create timetable for each classroom each at a time
 		const timetables = classrooms.map((classroom) => {
 			// Create schedule for each day
 			const dailySchedule = DAYS.map((day, dayIndex) => {
 				// Create periods for each day
-				const periods = [];
+				const periods = []; //init as empty array at first
 
 				for (let periodIndex = 0; periodIndex < PERIODS_PER_DAY; periodIndex++) {
-					// Get subject for this period (cycles through subjects)
 					const subjectIndex = periodIndex % classroom.subjects.length;
 					const subject = classroom.subjects[subjectIndex];
 
