@@ -155,9 +155,18 @@ export const generateSimpleTimetable = async (schoolId, config = {}) => {
 			};
 		});
 
+		const unassignedCount = timetables
+			.flatMap((tt) => tt.schedule)
+			.flatMap((d) => d.periods)
+			.filter((p) => p.warning === 'No available teacher').length;
+
+		if (unassignedCount > 0) {
+			console.warn(`${unassignedCount} periods could not be assigned a teacher !`);
+		}
+
 		return timetables;
 	} catch (error) {
-		console.error('Error generating timetable:', error);
+		console.error('Error generating timetable for school !', error);
 		throw error;
 	}
 };
