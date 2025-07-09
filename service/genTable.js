@@ -1,74 +1,164 @@
-import mongoose from 'mongoose';
-import moment from 'moment';
+// Import necessary modules
 import { ClassData } from '../database/model/classData.js';
-import { Subject } from '../database/model/subjects.js';
 import { ListOfTechers } from '../database/model/teachers.js';
 import calculateTime from '../utils/calculateTime.js';
-import getNameFromId from '../utils/lookUp.js';
 
-// Helper function to calculate time
+// Constants
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+const PERIODS_PER_DAY = 6;
+const PERIOD_DURATION = 45; // minutes
+const START_TIME = '08:00'; // School start time
 
-// Main timetable generation logic
-export const generateSimpleTimetable = async (schoolId) => {
-	//getting all data from the database
-	const classrooms = await ClassData.find({ school: schoolId }); //all classes in the school
-	const subjects = await Subject.find({ school: schoolId }); //all the subjeccts taught in the school
-	const teachers = await ListOfTechers.find({ school: schoolId }); //all the teachers in the school
+// Helper function to find an available teacher
+function findAvailableTeacher(
+	teachers,
+	subject,
+	classroom,
+	teacherAvailability,
+	dayIndex,
+	periodIndex
+) {
+	const subjectId = subject._id.toString();
+	const classroomId = classroom._id.toString();
 
-	//Creating the empty timetable
-	const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-	const periodsPerDay = 8; // 8 periods per day by default
-	const timetable = [];
-	//making the empty timetable slots or in other terms creating the empty timetable structure
-	for (const day of days) {
-		const daySchedule = {
-			day,
-			periods: [],
-		};
+	// First: Try to find teacher assigned to this class
+	for (const teacher of teachers) {
+		const teacherId = teacher._id.toString();
+		const availabilityKey = `${teacherId}-${dayIndex}-${periodIndex}`;
 
-		// Add empty periods for each day
-		for (let i = 0; i < periodsPerDay; i++) {
-			daySchedule.periods.push({
-				periodNumber: i + 1,
-				startTime: calculateTime('08:00', i * 45),
-				endTime: calculateTime('08:00', (i + 1) * 45),
-				subject: null,
-				teacher: null,
-				classroom: null,
+		const canTeach = teacher.subjects.some((s) => s._id.toString() === subjectId);
+		const assignedToClass = teacher.classes.some((c) => c._id.toString() === classroomId);
+		const isAvailable = !teacherAvailability.has(availabilityKey);
+
+		if (canTeach && assignedToClass && isAvailable) {
+			return teacher;
+		}
+	}
+
+	// Second: Try any teacher who can teach the subject
+	for (const teacher of teachers) {
+		const teacherId = teacher._id.toString();
+		const availabilityKey = `${teacherId}-${dayIndex}-${periodIndex}`;
+
+		const canTeach = teacher.subjects.some((s) => s._id.toString() === subjectId);
+		const isAvailable = !teacherAvailability.has(availabilityKey);
+
+		if (canTeach && isAvailable) {
+			return teacher;
+		}
+	}
+
+	return null; // No available teacher found
+}
+
+// Main function to generate timetable
+export const generateSimpleTimetable = async (schoolId, config = {}) => {
+	try {
+		// Get all classrooms for this school
+		const classrooms = await ClassData.find({ school: schoolId })
+			.populate('subjects', '_id name')
+			.lean();
+
+		// Get all teachers for this school
+		const teachers = await ListOfTechers.find({ school: schoolId })
+			.populate('subjects', '_id name')
+			.populate('classes', '_id name')
+			.lean();
+
+		// Track teacher availability (prevents double-booking)
+		const teacherAvailability = new Set();
+
+		// Create timetable for each classroom
+		const timetables = classrooms.map((classroom) => {
+			// Create schedule for each day
+			const dailySchedule = DAYS.map((day, dayIndex) => {
+				// Create periods for each day
+				const periods = [];
+
+				for (let periodIndex = 0; periodIndex < PERIODS_PER_DAY; periodIndex++) {
+					// Get subject for this period (cycles through subjects)
+					const subjectIndex = periodIndex % classroom.subjects.length;
+					const subject = classroom.subjects[subjectIndex];
+
+					// Handle case where no subject exists
+					if (!subject) {
+						periods.push({
+							day: day,
+							periodNumber: periodIndex + 1,
+							startTime: calculateTime(START_TIME, periodIndex * PERIOD_DURATION),
+							endTime: calculateTime(START_TIME, (periodIndex + 1) * PERIOD_DURATION),
+							subject: null,
+							teacher: null,
+							classroom: {
+								_id: classroom._id,
+								name: classroom.name,
+							},
+							warning: 'No subject assigned',
+						});
+						continue; // Skip to next period
+					}
+
+					// Find available teacher for this subject
+					const teacher = findAvailableTeacher(
+						teachers,
+						subject,
+						classroom,
+						teacherAvailability,
+						dayIndex,
+						periodIndex
+					);
+
+					// Mark teacher as busy if found
+					if (teacher) {
+						const availabilityKey = `${teacher._id}-${dayIndex}-${periodIndex}`;
+						teacherAvailability.add(availabilityKey);
+					}
+
+					// Create period entry
+					periods.push({
+						day: day,
+						periodNumber: periodIndex + 1,
+						startTime: calculateTime(START_TIME, periodIndex * PERIOD_DURATION),
+						endTime: calculateTime(START_TIME, (periodIndex + 1) * PERIOD_DURATION),
+						subject: {
+							_id: subject._id,
+							name: subject.name,
+						},
+						teacher: teacher
+							? {
+									_id: teacher._id,
+									name: `${teacher.firstName} ${teacher.lastName}`,
+							  }
+							: null,
+						classroom: {
+							_id: classroom._id,
+							name: classroom.name,
+						},
+						warning: teacher ? null : 'No available teacher',
+					});
+				}
+
+				return { day, periods };
 			});
-		}
-		timetable.push(daySchedule);
+
+			// Return final timetable for classroom
+			return {
+				name: `Timetable for ${classroom.name}`,
+				school: schoolId,
+				schedule: dailySchedule,
+				config: {
+					periodsPerDay: PERIODS_PER_DAY,
+					periodDuration: PERIOD_DURATION,
+					startTime: START_TIME,
+					breaks: config.breaks || [],
+				},
+				constraints: {},
+			};
+		});
+
+		return timetables;
+	} catch (error) {
+		console.error('Error generating timetable:', error);
+		throw error;
 	}
-
-	// 4. Assign subjects to periods (simple version)
-	let subjectIndex = 0;
-	let teacherIndex = 0;
-	let classroomIndex = 0;
-
-	for (const day of timetable) {
-		for (const period of day.periods) {
-			if (subjectIndex < subjects.length) {
-				period.subject = subjects[subjectIndex]._id;
-				subjectIndex++;
-			}
-
-			// Assign teacher if available
-			if (teacherIndex < teachers.length) {
-				period.teacher = teachers[teacherIndex]._id;
-				teacherIndex++;
-			}
-
-			// Assign classroom if available
-			if (classroomIndex < classrooms.length) {
-				period.classroom = classrooms[classroomIndex]._id;
-				classroomIndex++;
-			}
-
-			// Reset counters if we run out of items
-			if (subjectIndex >= subjects.length) subjectIndex = 0;
-			if (teacherIndex >= teachers.length) teacherIndex = 0;
-			if (classroomIndex >= classrooms.length) classroomIndex = 0;
-		}
-	}
-	return timetable;
 };
