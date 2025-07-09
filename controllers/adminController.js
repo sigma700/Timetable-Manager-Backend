@@ -7,7 +7,7 @@ import { Subject } from '../database/model/subjects.js';
 import { ListOfTechers } from '../database/model/teachers.js';
 
 import { generateSimpleTimetable } from '../service/genTable.js';
-import { sendError } from '../utils/sendError.js';
+import { sendError, sendSucess } from '../utils/sendError.js';
 
 //lets also list our school
 
@@ -16,12 +16,10 @@ export const listSchool = async (req, res) => {
 		const { name } = req.body;
 		//create the school
 		const createdSchool = await School.create({ name });
-		res.status(201).json({
-			success: true,
-			message: 'Created Successfully !',
-			data: createdSchool,
-		});
-	} catch (error) {}
+		sendSucess(res, 'School created successfully !', createdSchool);
+	} catch (error) {
+		sendError(res, error.message);
+	}
 };
 
 //done
@@ -29,37 +27,28 @@ export const listSchool = async (req, res) => {
 export const listTeachers = async (req, res) => {
 	try {
 		const { schoolId } = req.params;
-		const { firstName, lastName, subjects, classes } = req.body;
+		const { firstName, lastName, subjects } = req.body;
 
-		const exisisting = await ListOfTechers.findOne({ firstName, lastName });
-
-		if (exisisting) {
-			return res.status(400).json({
-				success: false,
-				message: 'Teacher already exists !',
-			});
+		if (!schoolId || !firstName || !lastName || !Array.isArray(subjects) || subjects.length === 0) {
+			return sendError(res, 'Missing or invalid teacher data', 400);
 		}
 
-		const createdTeachers = await ListOfTechers.create({
-			firstName,
-			lastName,
+		const existing = await ListOfTechers.findOne({ firstName, lastName, school: schoolId });
+		if (existing) {
+			return sendError(res, 'Teacher already exists in this school!', 400);
+		}
+
+		const createdTeacher = await ListOfTechers.create({
+			firstName: firstName.trim(),
+			lastName: lastName.trim(),
 			school: schoolId,
-			subjects: subjects,
-			classes: classes,
+			subjects,
 		});
 
-		const populatedTeacher = await ListOfTechers.findById(createdTeachers._id)
-			.populate('subjects')
-			.populate('classes');
-
-		res.status(201).json({
-			success: true,
-			message: 'Successfully created teacher !',
-			data: populatedTeacher,
-		});
+		sendSuccess(res, 'Successfully created teacher!', createdTeacher, 201);
 	} catch (error) {
-		console.log(error.message);
-		sendError(res, error.message, 500);
+		console.error(error.message);
+		sendError(res, error.message);
 	}
 };
 
@@ -68,67 +57,55 @@ export const listSubjects = async (req, res) => {
 	try {
 		const { schoolId } = req.params;
 		const { names } = req.body;
-		//automatically asign the school id to each subject
-		const newSubjects = names.map((name) => ({ name: name.trim(), school: schoolId }));
+
+		if (!schoolId || !Array.isArray(names) || names.length === 0) {
+			return sendError(res, 'Missing or invalid subject data', 400);
+		}
+
+		const newSubjects = names
+			.filter((name) => typeof name === 'string' && name.trim())
+			.map((name) => ({ name: name.trim(), school: schoolId }));
+
+		if (newSubjects.length === 0) {
+			return sendError(res, 'No valid subject names provided', 400);
+		}
 
 		const createdSubjects = await Subject.insertMany(newSubjects);
-		res.status(201).json({
-			success: true,
-			message: `Created ${names.length} subjects !`,
-			data: createdSubjects,
-		});
+
+		sendSuccess(res, `Created ${createdSubjects.length} subject(s)!`, createdSubjects, 201);
 	} catch (error) {
-		console.log(error.message);
-		sendError(res, error.message, 500);
+		console.error(error.message);
+		sendError(res, error.message);
 	}
 };
-//done
 export const listClassData = async (req, res) => {
 	try {
-		//lets get all the data form the req.body
 		const { schoolId } = req.params;
-		const { type, levels, labels, subjects } = req.body;
-		//in case user inputs the labels in lowercase then we convert it to uppercase yk
+		const { type, levels, labels } = req.body;
+
+		if (
+			!schoolId ||
+			!type ||
+			!Array.isArray(levels) ||
+			!Array.isArray(labels) ||
+			labels.length === 0
+		) {
+			return sendError(res, 'Missing or invalid class data', 400);
+		}
+
 		const convertedLabels = labels.map((label) => String(label).toUpperCase());
 
-		//i want to have a logic to make the classes have a joined structure such as 4A , 4B , 4C
-		const minLevel = parseInt(levels.min);
-		const maxLevel = parseInt(levels.max);
-		const generatedClasses = [];
-
-		for (let level = minLevel; level <= maxLevel; level++) {
-			for (const label of convertedLabels) {
-				generatedClasses.push({
-					name: `Grade ${level}${label}`,
-					level,
-					label,
-				});
-			}
-		}
-		const createdClasses = await ClassData.create(
-			generatedClasses.map((classData) => ({
-				type,
-				levels: {
-					min: levels.min,
-					max: levels.max,
-				},
-				labels: convertedLabels,
-				name: classData.name,
-				level: classData.level,
-				label: classData.label,
-				school: schoolId,
-				isOccupied: false,
-				subjects: subjects,
-			}))
-		);
-		res.status(201).json({
-			success: true,
-			message: `${generatedClasses.length} classes added to the db !`,
-			data: createdClasses,
+		const createdClassData = await ClassData.create({
+			type: type.trim(),
+			levels,
+			labels: convertedLabels,
+			school: schoolId,
 		});
+
+		sendSuccess(res, `Class data added to the database!`, createdClassData, 201);
 	} catch (error) {
-		console.log(error.message);
-		sendError(res, error.message, 500);
+		console.error(error.message);
+		sendError(res, error.message);
 	}
 };
 
@@ -140,20 +117,17 @@ export const genTimetableHandler = async (req, res) => {
 		const { name, config } = req.body;
 
 		// Generate timetable data
-		const timetableData = await generateSimpleTimetable(schoolId, config);
+		const schedule = await generateSimpleTimetable(schoolId, config);
 
 		// Create the timetable document
 		const timetable = await GenTable.create({
-			name,
+			name: name.trim(),
 			school: schoolId,
-			schedule: timetableData,
+			schedule,
 			constraints: {},
 		});
 
-		res.status(201).json({
-			success: true,
-			data: timetable,
-		});
+		sendSucess(res, 'Timetable generated ans saved to the database !', timetable, 201);
 	} catch (error) {
 		console.error('Timetable generation error:', error);
 		res.status(500).json({
@@ -162,6 +136,6 @@ export const genTimetableHandler = async (req, res) => {
 			errorDetails: process.env.NODE_ENV === 'development' ? error.stack : undefined,
 		});
 
-		sendError(res, error.message, 500);
+		sendError(res, error.message);
 	}
 };
