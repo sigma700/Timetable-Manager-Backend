@@ -1,40 +1,43 @@
-//middleware for checking in case of any overlaps in the timetable
+import { GenTable } from '../database/model/fullTable.js';
 
-import { Timetable } from '../database/model/timetable.js';
+export const checkTimetableConflict = async (newClass, excludeId = null) => {
+	// Time validation
 
-//findiing any existing classroom on the same Day
-export const checkTimetableConflict = async (newClass) => {
-	//time validation
 	if (newClass.endTime <= newClass.startTime) {
 		throw new Error('End time must be after start time');
 	}
 
-	//checking for overlapping classrooms by the same teacher !
-	const existingClass = await Timetable.findOne({
+	// Base query to exclude current document during updates
+	const baseQuery = {};
+	if (excludeId) baseQuery._id = { $ne: excludeId };
+
+	const teacherConflict = await GenTable.findOne({
+		...baseQuery,
 		day: newClass.day,
 		teacher: newClass.teacher,
-		class: newClass.class,
-		$or: [
-			//case 1 the new class starts before the old one ends
-			{
-				startTime: { $lt: newClass.endTime }, //existing class starts before the new one ends.
-				endTime: { $gt: newClass.startTime }, //exisisting one end before the new one starts.
-			},
+		$and: [{ startTime: { $lt: newClass.endTime } }, { endTime: { $gt: newClass.startTime } }],
+	})
+		.populate('subject', 'name')
+		.populate('class', 'name');
 
-			//case 2 new class completely contains the existing class
-			{
-				endTime: { $gte: newClass.startTime },
-				startTime: { $lte: newClass.endTime },
-			},
-		],
-	});
-
-	//buffercheck to ensure that the teacher does not have a lesson that lasts for more than 2 hours
-
-	//2.If overlap is found then throw a new error
-	if (existingClass) {
+	if (teacherConflict) {
 		throw new Error(
-			`Teacher already has ${existingClass.subject} in ${existingClass.class} at ${existingClass.startTime}-${existingClass.endTime}`
+			`Teacher already has ${teacherConflict.subject.name} in ${teacherConflict.class.name} at ${teacherConflict.startTime}-${teacherConflict.endTime}`
+		);
+	}
+
+	const classroomConflict = await GenTable.findOne({
+		...baseQuery,
+		day: newClass.day,
+		class: newClass.class, // Classroom ID
+		$and: [{ startTime: { $lt: newClass.endTime } }, { endTime: { $gt: newClass.startTime } }],
+	})
+		.populate('subject', 'name')
+		.populate('teacher', 'firstName lastName');
+
+	if (classroomConflict) {
+		throw new Error(
+			`Classroom is already occupied by ${classroomConflict.subject.name} (Teacher: ${classroomConflict.teacher.firstName} ${classroomConflict.teacher.lastName}) at ${classroomConflict.startTime}-${classroomConflict.endTime}`
 		);
 	}
 };
