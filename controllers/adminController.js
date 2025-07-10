@@ -117,13 +117,13 @@ export const genTimetableHandler = async (req, res) => {
 		const { name, config } = req.body;
 
 		// Generate timetable data
-		const schedule = await generateSimpleTimetable(schoolId, config);
+		const timetables = await generateSimpleTimetable(schoolId, config);
 
 		// Create the timetable document
 		const timetable = await GenTable.create({
 			name: name.trim(),
 			school: schoolId,
-			schedule,
+			timetables,
 			constraints: {},
 		});
 
