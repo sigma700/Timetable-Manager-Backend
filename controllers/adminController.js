@@ -124,6 +124,7 @@ export const genTimetableHandler = async (req, res) => {
 			name: name.trim(),
 			school: schoolId,
 			timetables,
+			config,
 			constraints: {},
 		});
 
