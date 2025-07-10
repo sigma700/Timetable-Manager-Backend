@@ -27,6 +27,7 @@ const timetableSchema = new Schema(
 			breaks: [
 				{
 					name: String,
+					isBreak: Boolean,
 					afterPeriod: Number,
 					duration: Number,
 					_id: false,
@@ -48,7 +49,7 @@ const timetableSchema = new Schema(
 								day: String,
 								periodNumber: {
 									type: Number,
-									required: true,
+									required: false,
 								},
 								startTime: {
 									type: String,
