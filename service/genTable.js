@@ -9,6 +9,38 @@ const PERIODS_PER_DAY = 6;
 const PERIOD_DURATION = 45; // minutes
 const START_TIME = '08:00'; // School start time
 
+function insertBreaks(periods, breaks, startTime, periodDuration) {
+	if (!Array.isArray(breaks) || breaks.length === 0) return periods;
+
+	let offset = 0;
+	for (const brk of breaks) {
+		const insertIndex = brk.afterPeriod + offset;
+		const lastPeriod = periods[insertIndex - 1] || periods[periods.length - 1];
+		const breakStartTime = lastPeriod
+			? lastPeriod.endTime
+			: calculateTime(startTime, brk.afterPeriod * periodDuration);
+		const breakEndTime = calculateTime(breakStartTime, brk.duration);
+
+		const breakObj = {
+			isBreak: true,
+			name: brk.name,
+			startTime: breakStartTime,
+			endTime: breakEndTime,
+			duration: brk.duration,
+		};
+
+		periods.splice(insertIndex, 0, breakObj);
+		offset++;
+
+		for (let i = insertIndex + 1; i < periods.length; i++) {
+			if (!periods[i].isBreak) {
+				periods[i].periodNumber = i - offset + 1;
+			}
+		}
+	}
+	return periods;
+}
+
 // Helper function to find an available teacher
 function findAvailableTeacher(
 	teachers,
@@ -79,7 +111,7 @@ export const generateSimpleTimetable = async (schoolId, config = {}) => {
 			// Create schedule for each day
 			const dailySchedule = DAYS.map((day, dayIndex) => {
 				// Create periods for each day
-				const periods = []; //init as empty array at first
+				let periods = []; //init as empty array at first
 
 				for (let periodIndex = 0; periodIndex < PERIODS_PER_DAY; periodIndex++) {
 					const subjectIndex = periodIndex % classroom.subjects.length;
@@ -142,6 +174,8 @@ export const generateSimpleTimetable = async (schoolId, config = {}) => {
 						warning: teacher ? null : 'No available teacher',
 					});
 				}
+				if (config.breaks)
+					periods = insertBreaks(periods, config.breaks, START_TIME, PERIOD_DURATION);
 
 				return { day, periods };
 			});
