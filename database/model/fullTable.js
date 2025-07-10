@@ -33,7 +33,7 @@ const timetableSchema = new Schema(
 				},
 			],
 		},
-		schedule: [
+		timetables: [
 			{
 				name: String,
 				school: {
