@@ -26,7 +26,13 @@ function findAvailableTeacher(
 		const teacherId = teacher._id.toString();
 		const availabilityKey = `${teacherId}-${dayIndex}-${periodIndex}`; //if the teacher is available i want to have a unique key for them
 		// console.log(availabilityKey);
-
+		// Prevent teacher from being double-booked across different classes at the same time
+		if (teacherAvailability.has(availabilityKey)) {
+			console.log(
+				'Added the skipper to make sure that the teacher does not have two classes at the same time !'
+			);
+			continue;
+		}
 		const canTeach = teacher.subjects.some((s) => s._id.toString() === subjectId); //pointblank (s) stands for subject for short
 		const assignedToClass = teacher.classes.some((c) => c._id.toString() === classroomId);
 		const isAvailable = !teacherAvailability.has(availabilityKey);
