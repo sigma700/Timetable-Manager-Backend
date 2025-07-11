@@ -33,6 +33,12 @@ const timetableSchema = new Schema(
 					_id: false,
 				},
 			],
+			doublePeriods: [
+				{
+					day: String,
+					period: Number,
+				},
+			],
 		},
 		timetables: [
 			{
@@ -97,6 +103,12 @@ const timetableSchema = new Schema(
 							afterPeriod: Number,
 							duration: Number,
 							_id: false,
+						},
+					],
+					doublePeriods: [
+						{
+							day: String,
+							period: Number,
 						},
 					],
 				},
