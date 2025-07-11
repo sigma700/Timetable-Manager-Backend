@@ -6,6 +6,7 @@ import { genJwTok } from '../utils/genJwToken.js';
 import { generateToken } from '../utils/genToken.js';
 import { School } from '../database/model/school.js';
 import { sendError, sendSucess } from '../utils/sendError.js';
+import { sendVerMail } from '../resend/sendEmail.js';
 
 export const createTeacher = async (req, res) => {
 	//lets enumerate the sign up
@@ -43,11 +44,14 @@ export const createTeacher = async (req, res) => {
 				password: hashedPass,
 				school: populatedSchool,
 				verToken,
+				verTokenExpDate: Date.now() + 24 * 60 * 1000,
 				contacts,
 			});
 
 			//set headers
 			genJwTok(res, teacher._id);
+			//lets send the email containing the cerification token that is required
+			await sendVerMail(teacher.email, verToken);
 
 			//send response
 
@@ -59,5 +63,39 @@ export const createTeacher = async (req, res) => {
 			message: error.message,
 		});
 		console.log(error);
+	}
+};
+
+//lets add a verification area for more enhanced security
+
+export const veriAcc = async (req, res) => {
+	const { code } = req.body; //lets get the code from the user inputs
+
+	try {
+		//lets check if the person actually has the account
+
+		const isExisting = await User.findOne({
+			verToken: code,
+			verTokenExpDate: { $gt: Date.now() },
+		});
+		if (!isExisting) {
+			return sendError(res, 'Code might be wrong or already expired !', 401);
+		}
+
+		//assignment
+		isExisting.isVerified = true;
+		isExisting.verToken = undefined; //token to dissapear for safety
+		isExisting.verTokenExpDate = undefined; //date to also dissapear lol
+
+		//save to the db
+
+		await isExisting.save();
+
+		//TODO: Send a welcome email to the user after successfull verification here
+
+		sendSucess(res, 'Verified !', isVerified, 200);
+	} catch (error) {
+		console.log(error); //i always add this for easier debugging of the code !
+		sendError(res, error.message);
 	}
 };
