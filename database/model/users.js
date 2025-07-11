@@ -13,7 +13,7 @@ const userSchema = new Schema(
 			enum: ['teacher', 'admin', 'school_admin'],
 			default: 'teacher',
 		},
-		school: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'school' },
+		school: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'School' },
 		contacts: { type: String, required: true },
 		resetPasscodeToken: String,
 		verToken: String,
@@ -23,4 +23,4 @@ const userSchema = new Schema(
 	}
 );
 
-export const User = mongoose.model('Teacher', userSchema);
+export const User = mongoose.model('User', userSchema);
