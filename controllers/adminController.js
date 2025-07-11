@@ -9,8 +9,6 @@ import { ListOfTechers } from '../database/model/teachers.js';
 import { generateSimpleTimetable } from '../service/genTable.js';
 import { sendError, sendSucess } from '../utils/sendError.js';
 
-//lets also list our school
-
 export const listSchool = async (req, res) => {
 	try {
 		const { name } = req.body;
@@ -108,8 +106,6 @@ export const listClassData = async (req, res) => {
 		sendError(res, error.message);
 	}
 };
-
-//not to generate the actual timetable
 
 export const genTimetableHandler = async (req, res) => {
 	try {
