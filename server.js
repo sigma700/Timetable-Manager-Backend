@@ -13,6 +13,8 @@ app.use(express.json());
 app.use('/api', router, dataRouter);
 //middleware for checking overlaps
 
+//the route in the middleware is for the users account creation logic
+
 connectDb();
 
 app.get('/', (req, res) => {
