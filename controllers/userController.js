@@ -4,7 +4,8 @@ import { User } from '../database/model/users.js';
 import bcrypt from 'bcrypt';
 import { genJwTok } from '../utils/genJwToken.js';
 import { generateToken } from '../utils/genToken.js';
-// this is the mainframe of the mnin
+import { School } from '../database/model/school.js';
+
 export const createTeacher = async (req, res) => {
 	//lets enumerate the sign up
 	const { firstName, lastName, password, email, school, contacts } = req.body;
@@ -15,6 +16,10 @@ export const createTeacher = async (req, res) => {
 				message: 'Please fill out all the required fileds !',
 			});
 		}
+
+		//lets populate the school variable so as to be able to access the school name rather than just the school ObjectId
+
+		const populatedSchool = await School.findById({ _id: school }).populate('name');
 
 		const exists = await User.findOne({ email: email });
 		//created this so as to remove the number of fetch requests in the application
@@ -47,7 +52,7 @@ export const createTeacher = async (req, res) => {
 				lastName,
 				email,
 				password: hashedPass,
-				school,
+				school: populatedSchool,
 				verToken,
 				contacts,
 			});
