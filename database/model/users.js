@@ -17,6 +17,7 @@ const userSchema = new Schema(
 		contacts: { type: String, required: true },
 		resetPasscodeToken: String,
 		verToken: String,
+		verTokenExpData: { type: Date },
 	},
 	{
 		timestamps: true,
