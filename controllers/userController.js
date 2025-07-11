@@ -6,7 +6,7 @@ import { genJwTok } from '../utils/genJwToken.js';
 import { generateToken } from '../utils/genToken.js';
 import { School } from '../database/model/school.js';
 import { sendError, sendSucess } from '../utils/sendError.js';
-import { sendVerMail } from '../resend/sendEmail.js';
+import { sendVerMail, senWelMail } from '../resend/sendEmail.js';
 
 export const createTeacher = async (req, res) => {
 	//lets enumerate the sign up
@@ -51,7 +51,7 @@ export const createTeacher = async (req, res) => {
 			//set headers
 			genJwTok(res, teacher._id);
 			//lets send the email containing the cerification token that is required
-			await sendVerMail(teacher.email, verToken);
+			await sendVerMail(teacher.verToken);
 
 			//send response
 
@@ -92,8 +92,9 @@ export const veriAcc = async (req, res) => {
 		await isExisting.save();
 
 		//TODO: Send a welcome email to the user after successfull verification here
+		await senWelMail(isExisting.email, isExisting.firstName);
 
-		sendSucess(res, 'Verified !', isVerified, 200);
+		sendSucess(res, 'Verified !', isExisting, 200);
 	} catch (error) {
 		console.log(error); //i always add this for easier debugging of the code !
 		sendError(res, error.message);
