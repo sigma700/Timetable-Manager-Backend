@@ -5,16 +5,14 @@ import bcrypt from 'bcrypt';
 import { genJwTok } from '../utils/genJwToken.js';
 import { generateToken } from '../utils/genToken.js';
 import { School } from '../database/model/school.js';
+import { sendError, sendSucess } from '../utils/sendError.js';
 
 export const createTeacher = async (req, res) => {
 	//lets enumerate the sign up
 	const { firstName, lastName, password, email, school, contacts } = req.body;
 	try {
 		if (!email || !password) {
-			return res.status(400).json({
-				success: false,
-				message: 'Please fill out all the required fileds !',
-			});
+			sendError(res, 'Please fill out the required areas !');
 		}
 
 		//lets populate the school variable so as to be able to access the school name rather than just the school ObjectId
@@ -26,22 +24,13 @@ export const createTeacher = async (req, res) => {
 		if (exists) {
 			const isPassValid = await bcrypt.compare(password, exists.password);
 			if (!isPassValid) {
-				return res.status(401).json({
-					success: false,
-					message: 'Incorrect user password !',
-				});
+				sendError(res, 'Password is incorrect !', 401);
 			}
 			genJwTok(res, exists._id);
-			res.status(200).json({
-				success: true,
-				message: 'Successfully logged in !',
-				data: exists,
-			});
 
-			return res.status(400).json({
-				success: false,
-				message: 'The user already exists try logging in instead !',
-			});
+			sendSucess(res, 'Successfully loged in !', exists, 201);
+
+			sendError(res, 'An error occured !', 500);
 		} else {
 			const hashedPass = await bcrypt.hash(password, 12);
 			const verToken = generateToken();
@@ -61,11 +50,8 @@ export const createTeacher = async (req, res) => {
 			genJwTok(res, teacher._id);
 
 			//send response
-			res.status(200).json({
-				success: true,
-				message: 'Success !',
-				data: teacher,
-			});
+
+			sendSucess(res, 'Successfully created new user !', teacher, 201);
 		}
 	} catch (error) {
 		res.status(500).json({
