@@ -1,5 +1,5 @@
-import { ClassData } from '../database/model/classData.js';
-import { ListOfTechers } from '../database/model/teachers.js';
+import { ClassData } from '../src/database/model/classData.js';
+import { ListOfTechers } from '../src/database/model/teachers.js';
 import insertBreaks from '../utils/addBreaks.js';
 import calculateTime from '../utils/calculateTime.js';
 import findAvailableTeacher from '../utils/findeTeacher.js';
