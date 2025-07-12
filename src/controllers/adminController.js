@@ -14,7 +14,7 @@ export const listSchool = async (req, res) => {
 		const { name } = req.body;
 		//create the school
 		const createdSchool = await School.create({ name });
-		sendSucess(res, 'School created successfully !', createdSchool);
+		return sendSucess(res, 'School created successfully !', createdSchool);
 	} catch (error) {
 		sendError(res, error.message);
 	}
@@ -43,7 +43,7 @@ export const listTeachers = async (req, res) => {
 			subjects,
 		});
 
-		sendSuccess(res, 'Successfully created teacher!', createdTeacher, 201);
+		return sendSuccess(res, 'Successfully created teacher!', createdTeacher, 201);
 	} catch (error) {
 		console.error(error.message);
 		sendError(res, error.message);
@@ -70,7 +70,7 @@ export const listSubjects = async (req, res) => {
 
 		const createdSubjects = await Subject.insertMany(newSubjects);
 
-		sendSuccess(res, `Created ${createdSubjects.length} subject(s)!`, createdSubjects, 201);
+		return sendSuccess(res, `Created ${createdSubjects.length} subject(s)!`, createdSubjects, 201);
 	} catch (error) {
 		console.error(error.message);
 		sendError(res, error.message);
@@ -100,7 +100,7 @@ export const listClassData = async (req, res) => {
 			school: schoolId,
 		});
 
-		sendSuccess(res, `Class data added to the database!`, createdClassData, 201);
+		return sendSuccess(res, `Class data added to the database!`, createdClassData, 201);
 	} catch (error) {
 		console.error(error.message);
 		sendError(res, error.message);
@@ -124,7 +124,7 @@ export const genTimetableHandler = async (req, res) => {
 			constraints: {},
 		});
 
-		sendSucess(res, 'Timetable generated ans saved to the database !', timetable, 201);
+		return sendSucess(res, 'Timetable generated ans saved to the database !', timetable, 201);
 	} catch (error) {
 		console.error('Timetable generation error:', error);
 		res.status(500).json({
