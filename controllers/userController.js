@@ -13,7 +13,7 @@ export const createTeacher = async (req, res) => {
 	const { firstName, lastName, password, email, school, contacts } = req.body;
 	try {
 		if (!email || !password) {
-			sendError(res, 'Please fill out the required areas !');
+			return sendError(res, 'Please fill out the required areas !');
 		}
 
 		//lets populate the school variable so as to be able to access the school name rather than just the school ObjectId
@@ -25,13 +25,11 @@ export const createTeacher = async (req, res) => {
 		if (exists) {
 			const isPassValid = await bcrypt.compare(password, exists.password);
 			if (!isPassValid) {
-				sendError(res, 'Password is incorrect !', 401);
+				return sendError(res, 'Password is incorrect !', 401);
 			}
 			genJwTok(res, exists._id);
 
-			sendSucess(res, 'Successfully loged in !', exists, 201);
-
-			sendError(res, 'An error occured !', 500);
+			return sendSucess(res, 'Successfully loged in !', exists, 201);
 		} else {
 			const hashedPass = await bcrypt.hash(password, 12);
 			const verToken = generateToken();
