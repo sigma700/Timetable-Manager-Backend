@@ -4,12 +4,15 @@ import { connectDb } from './database/config.js';
 import { router } from './routes/userRoutes.js';
 // import { lessonRouter } from './routes/lessonsRoute.js';
 import { dataRouter } from './routes/dataRouter.js';
+import cookieParser from 'cookie-parser';
+import { checkAuthentication } from './middleware/checkToken.js';
 
 const app = express();
 const port = process.env.PORT;
 
 app.use(express.json());
-// app.use('/api/check', lessonRouter);
+app.use(cookieParser());
+app.use('/api/checkAuth', checkAuthentication);
 app.use('/api', router, dataRouter);
 //middleware for checking overlaps
 
