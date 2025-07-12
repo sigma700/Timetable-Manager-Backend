@@ -19,8 +19,7 @@ export const generateSimpleTimetable = async (schoolId, config = {}) => {
 			.populate('classes', '_id name')
 			.lean();
 
-		const teacherAvailability = new Set();
-
+		const teacherAvailability = new Set(); //i wanna be a 10X software engineer !
 		const timetables = classrooms.map((classroom) => {
 			const classroomConfig = {
 				periodsPerDay: classroom.config?.periodsPerDay || config.periodsPerDay || 5,
@@ -124,7 +123,7 @@ export const generateSimpleTimetable = async (schoolId, config = {}) => {
 							? {
 									_id: teacher._id,
 									name: `${teacher.firstName} ${teacher.lastName}`,
-							  }
+								}
 							: null,
 						classroom: { _id: classroom._id, name: classroom.name },
 						warning: teacher ? null : 'No available teacher',
