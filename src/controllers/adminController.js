@@ -51,6 +51,7 @@ export const listTeachers = async (req, res) => {
 };
 
 //done
+
 export const listSubjects = async (req, res) => {
 	try {
 		const { schoolId } = req.params;
