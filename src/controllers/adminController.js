@@ -198,3 +198,16 @@ export const deleteTable = async (req, res) => {
 		sendError(res, error.message, 500);
 	}
 };
+
+//now for getting the timetable after it has been generated !
+export const getTimetable = async (req, res) => {
+	const { timetableId } = req.params;
+	try {
+		const timetable = await GenTable.findById({ _id: timetableId });
+		sendSucess(res, 'Here is the timetable', timetable, 200);
+	} catch (error) {
+		console.log(error);
+
+		sendError(res, error.message);
+	}
+};
