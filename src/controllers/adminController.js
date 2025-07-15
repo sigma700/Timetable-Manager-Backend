@@ -190,8 +190,8 @@ export const updateTimetable = async (req, res) => {
 
 //if the timetable is not what was expected then i want the user to be able to delete it
 export const deleteTable = async (req, res) => {
-	const { timetableId } = req.params;
 	try {
+		const { timetableId } = req.params;
 		const deletedTimetable = await GenTable.findOneAndDelete({ _id: timetableId });
 		sendSucess(res, 'Deleted the timetable', deletedTimetable, 200);
 	} catch (error) {
