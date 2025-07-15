@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import {
+	deleteTable,
 	genTimetableHandler,
 	listClassData,
 	listSchool,
@@ -15,6 +16,7 @@ dataRouter.post('/list-subjects/:schoolId', listSubjects);
 dataRouter.post('/list-classData/:schoolId', listClassData);
 dataRouter.post('/gen-table/:schoolId', genTimetableHandler);
 dataRouter.put('/updateTable/:timetableId', updateTimetable);
+dataRouter.delete('/delTable/:timetableId', deleteTable);
 dataRouter.post('/list-school', listSchool);
 
 export { dataRouter };
