@@ -137,3 +137,34 @@ export const genTimetableHandler = async (req, res) => {
 		sendError(res, error.message);
 	}
 };
+
+//here lets create a new fucntion for updating the timetable
+export const updateTimetable = async (req, res) => {
+	try {
+		const { timetableId } = req.params;
+		const updateData = req.body;
+
+		if (!timetableId || !updateData || typeof updateData !== 'object') {
+			return sendError(res, 'Missing timetable ID or update data', 400);
+		}
+
+		const timetable = await GenTable.findOneAndUpdate({ _id: timetableId });
+		if (!timetable) {
+			return sendError(res, 'Timetable not found', 404);
+		}
+
+		Object.keys(updateData).forEach((key) => {
+			timetable[key] = updateData[key];
+		});
+
+		if (updateData.updateNestedConfigs && updateData.config) {
+			timetable.timetables.forEach((nestedTimetable) => {
+				nestedTimetable.config = { ...nestedTimetable.config, ...updateData.config };
+			});
+		}
+
+		await timetable.save();
+
+		return sendSucess(res, 'Timetable updated successfully!', timetable, 200);
+	} catch (error) {}
+};
