@@ -152,6 +152,12 @@ export const updateTimetable = async (req, res) => {
 		if (!timetable) {
 			return sendError(res, 'Timetable not found', 404);
 		}
+		//to check if the config had changed
+		const isConfigUpdate =
+			updateData.config &&
+			(updateData.config.periodDuration !== timetable.config.periodDuration ||
+				updateData.config.startTime !== timetable.config.startTime ||
+				JSON.stringify(updateData.config.breaks) !== JSON.stringify(timetable.config.breaks));
 
 		Object.keys(updateData).forEach((key) => {
 			timetable[key] = updateData[key];
@@ -163,8 +169,21 @@ export const updateTimetable = async (req, res) => {
 			});
 		}
 
+		// Recalculate times if config changed
+		if (isConfigUpdate) {
+			timetable.timetables.forEach((nestedTimetable) => {
+				nestedTimetable.schedule = calculatePeriodTimes(
+					nestedTimetable.schedule,
+					nestedTimetable.config
+				);
+			});
+		}
+
 		await timetable.save();
 
 		return sendSucess(res, 'Timetable updated successfully!', timetable, 200);
-	} catch (error) {}
+	} catch (error) {
+		console.log(error);
+		sendError(res, error.message, 500);
+	}
 };
