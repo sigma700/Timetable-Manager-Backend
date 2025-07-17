@@ -6,7 +6,7 @@ export const checkAuthentication = async (req, res, next) => {
 	const { token } = req.cookies;
 
 	if (!token) {
-		sendError(res, 'Are you logged in yet ?', 401);
+		sendError(res, 'Are you logged in yet ?', 401); //here there is a problem !
 		return;
 	}
 
