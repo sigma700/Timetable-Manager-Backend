@@ -1,4 +1,5 @@
 import express from 'express';
+import cors from 'cors';
 import 'dotenv/config';
 import { connectDb } from './database/config.js';
 import { router } from './routes/userRoutes.js';
@@ -15,7 +16,8 @@ app.use(cookieParser());
 app.use(
 	cors({
 		origin: 'http://localhost:5173',
-		methods: 'GET , POST , PUT , DELETE , PATCH',
+		methods: ['GET , POST , PUT , DELETE , PATCH'],
+		credentials: true,
 	})
 );
 app.use('/api/checkAuth', checkAuthentication);
