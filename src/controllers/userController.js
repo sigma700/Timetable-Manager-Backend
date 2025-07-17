@@ -10,7 +10,8 @@ import { sendVerMail, senWelMail } from '../../resend/sendEmail.js';
 
 export const createTeacher = async (req, res) => {
 	//lets enumerate the sign up
-	const { firstName, lastName, password, email, school, contacts } = req.body;
+	const { school } = req.params;
+	const { firstName, lastName, password, email, contacts } = req.body;
 	try {
 		if (!email || !password) {
 			return sendError(res, 'Please fill out the required areas !');
