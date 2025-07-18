@@ -13,10 +13,8 @@ export const checkAuthentication = async (req, res, next) => {
 	try {
 		const decodedToken = jwt.verify(token, process.env.WEBTOKEN);
 		if (!decodedToken) {
-			sendError(res, 'Failed could not decode the token !', 500);
+			return sendError(res, 'Failed could not decode the token !', 500);
 		}
-
-		sendSucess(res, 'Sucess !', decodedToken, 200);
 
 		req.userId = decodedToken.userId;
 		next(); //gives the logic to any of the related functions
