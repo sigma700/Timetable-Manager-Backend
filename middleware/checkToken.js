@@ -2,8 +2,8 @@
 
 import { sendError, sendSucess } from '../utils/sendError.js';
 import jwt from 'jsonwebtoken';
-export const checkAuthentication = async (req, res, next) => {
-	const { token } = req.cookies;
+export const verifyToken = async (req, res, next) => {
+	const token = req.cookies.token;
 
 	if (!token) {
 		sendError(res, 'Are you logged in yet ?', 401); //here there is a problem !
