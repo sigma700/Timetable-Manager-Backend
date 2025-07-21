@@ -43,9 +43,9 @@ export const listTeachers = async (req, res) => {
 			subjects,
 		});
 
-		return sendSuccess(res, 'Successfully created teacher!', createdTeacher, 201);
+		sendSucess(res, 'Successfully created teacher!', createdTeacher, 201);
 	} catch (error) {
-		console.error(error.message);
+		console.error(error);
 		sendError(res, error.message);
 	}
 };
