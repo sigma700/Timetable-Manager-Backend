@@ -20,7 +20,7 @@ export const listSchool = async (req, res) => {
 	}
 };
 
-//done
+//done annd dusted all along
 
 export const listSubjects = async (req, res) => {
 	try {
