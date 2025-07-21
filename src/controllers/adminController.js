@@ -22,36 +22,6 @@ export const listSchool = async (req, res) => {
 
 //done
 
-export const listTeachers = async (req, res) => {
-	try {
-		const { schoolId } = req.params;
-		const { firstName, lastName, subjects } = req.body;
-
-		if (!schoolId || !firstName || !lastName || !Array.isArray(subjects) || subjects.length === 0) {
-			return sendError(res, 'Missing or invalid teacher data', 400);
-		}
-
-		const existing = await ListOfTechers.findOne({ firstName, lastName, school: schoolId });
-		if (existing) {
-			return sendError(res, 'Teacher already exists in this school!', 400);
-		}
-
-		const createdTeacher = await ListOfTechers.create({
-			firstName: firstName.trim(),
-			lastName: lastName.trim(),
-			school: schoolId,
-			subjects,
-		});
-
-		sendSucess(res, 'Successfully created teacher!', createdTeacher, 201);
-	} catch (error) {
-		console.error(error);
-		sendError(res, error.message);
-	}
-};
-
-//done
-
 export const listSubjects = async (req, res) => {
 	try {
 		const { schoolId } = req.params;
@@ -77,6 +47,7 @@ export const listSubjects = async (req, res) => {
 		sendError(res, error.message);
 	}
 };
+
 export const listClassData = async (req, res) => {
 	try {
 		const { schoolId } = req.params;
@@ -107,6 +78,36 @@ export const listClassData = async (req, res) => {
 		sendError(res, error.message);
 	}
 };
+
+export const listTeachers = async (req, res) => {
+	try {
+		const { schoolId } = req.params;
+		const { firstName, lastName, subjects } = req.body;
+
+		if (!schoolId || !firstName || !lastName || !Array.isArray(subjects) || subjects.length === 0) {
+			return sendError(res, 'Missing or invalid teacher data', 400);
+		}
+
+		const existing = await ListOfTechers.findOne({ firstName, lastName, school: schoolId });
+		if (existing) {
+			return sendError(res, 'Teacher already exists in this school!', 400);
+		}
+
+		const createdTeacher = await ListOfTechers.create({
+			firstName: firstName.trim(),
+			lastName: lastName.trim(),
+			school: schoolId,
+			subjects,
+		});
+
+		sendSucess(res, 'Successfully created teacher!', createdTeacher, 201);
+	} catch (error) {
+		console.error(error);
+		sendError(res, error.message);
+	}
+};
+
+//done
 
 export const genTimetableHandler = async (req, res) => {
 	try {
