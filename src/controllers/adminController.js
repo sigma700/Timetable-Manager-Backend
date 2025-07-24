@@ -24,7 +24,7 @@ export const listSchool = async (req, res) => {
 
 export const listSubjects = async (req, res) => {
 	try {
-		const { schoolId } = req.params;
+		const { schoolId } = req.params; //
 		const { names } = req.body;
 
 		if (!schoolId || !Array.isArray(names) || names.length === 0) {
@@ -41,7 +41,7 @@ export const listSubjects = async (req, res) => {
 
 		const createdSubjects = await Subject.insertMany(newSubjects);
 
-		return sendSuccess(res, `Created ${createdSubjects.length} subject(s)!`, createdSubjects, 201);
+		return sendSucess(res, `Created ${createdSubjects.length} subject(s)!`, createdSubjects, 201);
 	} catch (error) {
 		console.error(error.message);
 		sendError(res, error.message);
