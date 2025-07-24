@@ -51,30 +51,51 @@ export const listSubjects = async (req, res) => {
 export const listClassData = async (req, res) => {
 	try {
 		const { schoolId } = req.params;
-		const { type, levels, labels } = req.body;
+		const { type, minLevel, maxLevel, labels } = req.body;
 
-		if (
-			!schoolId ||
-			!type ||
-			!Array.isArray(levels) ||
-			!Array.isArray(labels) ||
-			labels.length === 0
-		) {
-			return sendError(res, 'Missing or invalid class data', 400);
+		// Validation
+		if (!schoolId || !type || minLevel === undefined || maxLevel === undefined || !labels?.length) {
+			return sendError(res, 'Missing required fields', 400);
 		}
 
-		const convertedLabels = labels.map((label) => String(label).toUpperCase());
+		// Check if type is valid
+		const validTypes = ['Class', 'Grade', 'Form'];
+		if (!validTypes.includes(type)) {
+			return sendError(res, `Invalid type. Must be one of: ${validTypes.join(', ')}`, 400);
+		}
 
-		const createdClassData = await ClassData.create({
-			type: type.trim(),
-			levels,
-			labels: convertedLabels,
-			school: schoolId,
-		});
+		const min = parseInt(minLevel);
+		const max = parseInt(maxLevel);
 
-		return sendSuccess(res, `Class data added to the database!`, createdClassData, 201);
+		if (isNaN(min) || isNaN(max) || min > max) {
+			return sendError(res, 'Invalid level range', 400);
+		}
+
+		// Generate all class combinations
+		const classes = [];
+		for (let level = min; level <= max; level++) {
+			for (const label of labels.map((l) => String(l).toUpperCase())) {
+				classes.push({
+					name: `${type.trim()} ${level}${label}`,
+					type: type.trim(),
+					level,
+					label,
+					school: schoolId,
+					isOccupied: false,
+					subjects: [],
+				});
+			}
+		}
+
+		// Create all classes
+		const createdClasses = await ClassData.insertMany(classes);
+
+		return sendSucess(res, `${createdClasses.length} classes created`, createdClasses, 201);
 	} catch (error) {
-		console.error(error.message);
+		console.error(error);
+		if (error.code === 11000) {
+			return sendError(res, 'Some of these classes already exist', 400);
+		}
 		sendError(res, error.message);
 	}
 };

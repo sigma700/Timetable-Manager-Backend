@@ -1,25 +1,43 @@
 import mongoose, { Schema } from 'mongoose';
 
 const validTypes = ['Class', 'Grade', 'Form'];
-const clasRomsSchema = new Schema({
+const classSchema = new Schema({
 	school: {
 		type: mongoose.Schema.Types.ObjectId,
 		ref: 'School',
 		required: true,
 	},
-	name: { type: String },
-	type: { type: String, required: true, unique: true, enum: validTypes }, //eg if it is in form of grades or classes or forms
-	levels: {
-		min: { type: String, required: true },
-		max: { type: String, required: true },
-	}, //max and min
-	labels: { type: Array, required: true },
-	isOccupied: { type: Boolean },
-	subjects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Subject' }],
+	name: {
+		type: String,
+		required: true,
+	},
+	type: {
+		type: String,
+		required: true,
+		enum: validTypes,
+	},
+	level: {
+		type: Number,
+		required: true,
+	},
+	label: {
+		type: String,
+		required: true,
+	},
+	isOccupied: {
+		type: Boolean,
+		default: false,
+	},
+	subjects: [
+		{
+			type: mongoose.Schema.Types.ObjectId,
+			ref: 'Subject',
+		},
+	],
 });
-clasRomsSchema.index(({ school: 1, name: 1 }, { unique: true }));
-const ClassData = mongoose.model('ClassData', clasRomsSchema);
 
+// Compound unique index for school + name combination
+classSchema.index({ school: 1, name: 1 }, { unique: true });
+
+const ClassData = mongoose.model('ClassData', classSchema);
 export { ClassData };
-
-//this part requires some fixing
