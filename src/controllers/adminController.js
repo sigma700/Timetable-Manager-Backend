@@ -71,7 +71,11 @@ export const listClassData = async (req, res) => {
 			return sendError(res, 'Invalid level range', 400);
 		}
 
-		// Generate all class combinations
+		//lets get all the subjects taught in the schoool instead of having it in automatic
+
+		const allSubjects = await Subject.find({ school: schoolId });
+		const subjectIds = allSubjects.map((subject) => subject._id);
+
 		const classes = [];
 		for (let level = min; level <= max; level++) {
 			for (const label of labels.map((l) => String(l).toUpperCase())) {
@@ -82,7 +86,7 @@ export const listClassData = async (req, res) => {
 					label,
 					school: schoolId,
 					isOccupied: false,
-					subjects: [],
+					subjects: subjectIds,
 				});
 			}
 		}
