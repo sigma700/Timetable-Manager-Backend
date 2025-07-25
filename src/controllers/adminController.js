@@ -107,27 +107,53 @@ export const listClassData = async (req, res) => {
 export const listTeachers = async (req, res) => {
 	try {
 		const { schoolId } = req.params;
-		const { firstName, lastName, subjects } = req.body;
+		const { name, subjects, classesNames } = req.body;
 
-		if (!schoolId || !firstName || !lastName || !Array.isArray(subjects) || subjects.length === 0) {
+		// Validation
+		if (
+			!schoolId ||
+			!name ||
+			!Array.isArray(subjects) ||
+			subjects.length === 0 ||
+			!Array.isArray(classesNames)
+		) {
 			return sendError(res, 'Missing or invalid teacher data', 400);
 		}
 
-		const existing = await ListOfTechers.findOne({ firstName, lastName, school: schoolId });
+		// Check if teacher already exists
+		const existing = await ListOfTechers.findOne({ name, school: schoolId });
 		if (existing) {
 			return sendError(res, 'Teacher already exists in this school!', 400);
 		}
 
+		// Find all class IDs for the provided class names
+		const classes = await ClassData.find({
+			name: { $in: classesNames },
+			school: schoolId,
+		});
+
+		if (classes.length !== classesNames.length) {
+			const foundClassNames = classes.map((c) => c.name);
+			const missingClasses = classesNames.filter((name) => !foundClassNames.includes(name));
+			return sendError(res, `These classes don't exist: ${missingClasses.join(', ')}`, 400);
+		}
+
+		const classIds = classes.map((c) => c._id);
+
+		// Create teacher with class IDs
 		const createdTeacher = await ListOfTechers.create({
-			firstName: firstName.trim(),
-			lastName: lastName.trim(),
+			name: name.trim(),
+			classes: classIds,
 			school: schoolId,
 			subjects,
 		});
 
-		sendSucess(res, 'Successfully created teacher!', createdTeacher, 201);
+		return sendSucess(res, 'Successfully created teacher!', createdTeacher, 201);
 	} catch (error) {
 		console.error(error);
+		if (error.code === 11000) {
+			return sendError(res, 'Teacher with this name already exists', 400);
+		}
 		sendError(res, error.message);
 	}
 };
