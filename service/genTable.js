@@ -122,7 +122,7 @@ export const generateSimpleTimetable = async (schoolId, config = {}) => {
 						teacher: teacher
 							? {
 									_id: teacher._id,
-									name: `${teacher.firstName} ${teacher.lastName}`,
+									name: `${teacher.name}`,
 								}
 							: null,
 						classroom: { _id: classroom._id, name: classroom.name },
