@@ -7,7 +7,7 @@ import { shuffleArray } from './shuffle.js';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
-// Main timetable generator
+// Main timetable generator lol
 // Modified generateSimpleTimetable function with double period support
 export const generateSimpleTimetable = async (schoolId, config = {}) => {
 	try {
