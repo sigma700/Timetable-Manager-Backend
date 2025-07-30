@@ -4,7 +4,6 @@ const timetableSchema = new Schema(
 	{
 		name: {
 			type: String,
-			required: true,
 		},
 		school: {
 			type: Schema.Types.ObjectId,

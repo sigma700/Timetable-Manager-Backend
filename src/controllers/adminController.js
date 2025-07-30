@@ -180,7 +180,7 @@ export const genTimetableHandler = async (req, res) => {
 
 		// Create the timetable document
 		const timetable = await GenTable.create({
-			name: name.trim(),
+			name: name,
 			school: schoolId,
 			timetables,
 			config,
