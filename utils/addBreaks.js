@@ -21,6 +21,7 @@ export default function insertBreaks(periods, breaks, startTime, periodDuration)
 		// Create break object
 		const breakObj = {
 			isBreak: true,
+
 			name: brk.name,
 			startTime: breakStartTime,
 			endTime: breakEndTime,
