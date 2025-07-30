@@ -3,6 +3,7 @@ import { ListOfTechers } from '../src/database/model/teachers.js';
 import insertBreaks from '../utils/addBreaks.js';
 import calculateTime from '../utils/calculateTime.js';
 import findAvailableTeacher from '../utils/findeTeacher.js';
+import { shuffleArray } from './shuffle.js';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
@@ -33,9 +34,11 @@ export const generateSimpleTimetable = async (schoolId, config = {}) => {
 				let periods = [];
 				let periodIndex = 0;
 
+				const shuffledSubjects = shuffleArray(classroom.subjects);
+
 				while (periodIndex < classroomConfig.periodsPerDay) {
-					const subjectIndex = periodIndex % classroom.subjects.length;
-					const subject = classroom.subjects[subjectIndex];
+					const subjectIndex = periodIndex % shuffledSubjects.length;
+					const subject = shuffledSubjects[subjectIndex];
 
 					// Check if this should be a double period
 					const isDoublePeriod = classroomConfig.doublePeriods.some(
