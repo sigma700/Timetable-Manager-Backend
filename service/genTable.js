@@ -11,12 +11,12 @@ const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 export const generateSimpleTimetable = async (schoolId, config = {}) => {
 	try {
 		const classrooms = await ClassData.find({ school: schoolId })
-			.populate('subjects', '_id name')
+			.populate({ path: 'subjects', select: '_id name' })
 			.lean();
 
 		const teachers = await ListOfTechers.find({ school: schoolId })
-			.populate('subjects', '_id name')
-			.populate('classes', '_id name')
+			.populate({ path: 'subjects', select: '_id name' })
+			.populate({ path: 'classes', select: '_id name' })
 			.lean();
 
 		const teacherAvailability = new Set(); //i wanna be a 10X software engineer !

@@ -24,7 +24,7 @@ export const listSchool = async (req, res) => {
 
 export const listSubjects = async (req, res) => {
 	try {
-		const { schoolId } = req.params; //
+		const { schoolId } = req.params;
 		const { names } = req.body;
 
 		if (!schoolId || !Array.isArray(names) || names.length === 0) {
@@ -48,6 +48,7 @@ export const listSubjects = async (req, res) => {
 	}
 };
 
+//this is my code do not dare and steal it because i will sue you as a thief of mental property
 export const listClassData = async (req, res) => {
 	try {
 		const { schoolId } = req.params;
@@ -126,6 +127,15 @@ export const listTeachers = async (req, res) => {
 			return sendError(res, 'Teacher already exists in this school!', 400);
 		}
 
+		//find all subjects id using their input names
+
+		const subjNames = await Subject.find({
+			name: { $in: subjects },
+			school: schoolId,
+		});
+
+		const subjIds = subjNames.map((s) => s._id);
+
 		// Find all class IDs for the provided class names
 		const classes = await ClassData.find({
 			name: { $in: classesNames },
@@ -145,7 +155,7 @@ export const listTeachers = async (req, res) => {
 			name: name.trim(),
 			classes: classIds,
 			school: schoolId,
-			subjects,
+			subjects: subjIds,
 		});
 
 		return sendSucess(res, 'Successfully created teacher!', createdTeacher, 201);
