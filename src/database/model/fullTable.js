@@ -64,6 +64,9 @@ const timetableSchema = new Schema(
 									type: String,
 									required: true,
 								},
+								//these two areas are added so as to be able to take up the break names
+								name: { type: String },
+								isBreak: { type: Boolean },
 								subject: {
 									_id: {
 										type: Schema.Types.ObjectId,
