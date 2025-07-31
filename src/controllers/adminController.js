@@ -8,6 +8,7 @@ import { ListOfTechers } from '../database/model/teachers.js';
 
 import { generateSimpleTimetable } from '../../service/genTable.js';
 import { sendError, sendSucess } from '../../utils/sendError.js';
+import { User } from '../database/model/users.js';
 
 export const listSchool = async (req, res) => {
 	try {
@@ -262,10 +263,22 @@ export const deleteTable = async (req, res) => {
 };
 
 //now for getting the timetable after it has been generated !
+//to make sure that the timetable that is being shown is for the user that is already verified and has an account
 export const getTimetable = async (req, res) => {
 	const { timetableId } = req.params;
 	try {
-		const timetable = await GenTable.findById({ _id: timetableId });
+		const user = await User.findById(req.userId);
+		if (!user) {
+			return sendError(res, 'User not found', 404);
+		}
+		const timetable = await GenTable.findById({ _id: timetableId, school: user.school }).populate(
+			'school'
+		);
+
+		if (!timetable) {
+			return sendError(res, 'Timetable not found or access denied', 404);
+		}
+
 		sendSucess(res, 'Here is the timetable', timetable, 200);
 	} catch (error) {
 		console.log(error);
