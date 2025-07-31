@@ -271,9 +271,13 @@ export const getTimetable = async (req, res) => {
 		if (!user) {
 			return sendError(res, 'User not found', 404);
 		}
-		const timetable = await GenTable.findById({ _id: timetableId, school: user.school }).populate(
-			'school'
-		);
+		const timetable = await GenTable.findOne({
+			_id: timetableId,
+			$or: [
+				{ createdBy: req.userId }, // Owner check
+				{ school: user.school }, // School-wide access
+			],
+		}).populate('school');
 
 		if (!timetable) {
 			return sendError(res, 'Timetable not found or access denied', 404);
