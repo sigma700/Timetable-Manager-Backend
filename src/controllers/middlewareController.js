@@ -9,6 +9,7 @@ export const checkAuth = async (req, res) => {
 		if (!user) {
 			return sendError(res, 'User not found!', 401);
 		}
+		//after user is found then lets populate the user to show the timetable that is created by the user
 
 		sendSucess(res, 'Sucess', user, 200);
 	} catch (error) {

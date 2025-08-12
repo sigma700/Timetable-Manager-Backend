@@ -175,6 +175,15 @@ export const genTimetableHandler = async (req, res) => {
 	try {
 		const { schoolId } = req.params;
 		const { name, config } = req.body;
+		const userId = req.userId;
+
+		if (!name) {
+			return sendError(res, 'Name value is required !');
+		}
+
+		if (!userId) {
+			return sendError(res, 'User  not authenticated !', 401);
+		}
 
 		// Generate timetable data
 		const timetables = await generateSimpleTimetable(schoolId, config);
@@ -186,7 +195,11 @@ export const genTimetableHandler = async (req, res) => {
 			timetables,
 			config,
 			constraints: {},
+			createdBy: userId,
 		});
+
+		// Update the creator (admin/teacher who generated the timetable)
+		await User.findByIdAndUpdate(userId, { $push: { timetables: timetable._id } }, { new: true });
 
 		return sendSucess(res, 'Timetable generated ans saved to the database !', timetable, 201);
 	} catch (error) {
@@ -265,7 +278,7 @@ export const deleteTable = async (req, res) => {
 //now for getting the timetable after it has been generated !
 //to make sure that the timetable that is being shown is for the user that is already verified and has an account
 export const getTimetable = async (req, res) => {
-	const { timetableId } = req.params;
+	const { timetableId, name } = req.params;
 	try {
 		const user = await User.findById(req.userId);
 		if (!user) {
@@ -273,6 +286,7 @@ export const getTimetable = async (req, res) => {
 		}
 		const timetable = await GenTable.findOne({
 			_id: timetableId,
+			name: name,
 			$or: [
 				{ createdBy: req.userId }, // Owner check
 				{ school: user.school }, // School-wide access

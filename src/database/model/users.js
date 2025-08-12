@@ -18,6 +18,7 @@ const userSchema = new Schema(
 		resetPasscodeToken: String,
 		verToken: String,
 		verTokenExpDate: Date,
+		timetables: { type: mongoose.Schema.Types.String, ref: 'Timetable' },
 	},
 	{
 		timestamps: true,
