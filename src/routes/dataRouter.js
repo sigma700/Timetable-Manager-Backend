@@ -20,7 +20,7 @@ dataRouter.post('/gen-table/:schoolId', verifyToken, genTimetableHandler);
 dataRouter.put('/updateTable/:timetableId', updateTimetable);
 dataRouter.delete('/delTable/:timetableId', deleteTable);
 //now to get all the data about the timetable that has been gerenrated !
-dataRouter.get('/getTable/:timetableId/:name', verifyToken, getTimetable);
+dataRouter.get('/getTable/:timetableId', verifyToken, getTimetable);
 dataRouter.post('/list-school', listSchool);
 
 export { dataRouter };

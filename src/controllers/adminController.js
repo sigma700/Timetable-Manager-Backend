@@ -278,7 +278,7 @@ export const deleteTable = async (req, res) => {
 //now for getting the timetable after it has been generated !
 //to make sure that the timetable that is being shown is for the user that is already verified and has an account
 export const getTimetable = async (req, res) => {
-	const { timetableId, name } = req.params;
+	const { timetableId } = req.params;
 	try {
 		const user = await User.findById(req.userId);
 		if (!user) {
@@ -286,12 +286,11 @@ export const getTimetable = async (req, res) => {
 		}
 		const timetable = await GenTable.findOne({
 			_id: timetableId,
-			name: name,
-			$or: [
-				{ createdBy: req.userId }, // Owner check
-				{ school: user.school }, // School-wide access
-			],
-		}).populate('school');
+			// $or: [
+			// 	{ createdBy: req.userId }, // Owner check
+			// 	{ school: user.school }, // School-wide access
+			// ],
+		});
 
 		if (!timetable) {
 			return sendError(res, 'Timetable not found or access denied', 404);
