@@ -21,47 +21,60 @@ export const createTeacher = async (req, res) => {
 
 		const populatedSchool = await School.findById({ _id: school }).populate('name');
 
-		const exists = await User.findOne({ email: email });
-		//created this so as to remove the number of fetch requests in the application
-		if (exists) {
-			const isPassValid = await bcrypt.compare(password, exists.password);
-			if (!isPassValid) {
-				return sendError(res, 'Password is incorrect !', 401);
-			}
-			genJwTok(res, exists._id);
+		const hashedPass = await bcrypt.hash(password, 12);
+		const verToken = generateToken();
 
-			return sendSucess(res, 'Successfully loged in !', exists, 201);
-		} else {
-			const hashedPass = await bcrypt.hash(password, 12);
-			const verToken = generateToken();
+		//creation of the user
+		const teacher = await User.create({
+			firstName,
+			lastName,
+			email,
+			password: hashedPass,
+			school: populatedSchool,
+			verToken,
+			verTokenExpDate: Date.now() + 24 * 60 * 1000,
+			contacts,
+		});
 
-			//creation of the user
-			const teacher = await User.create({
-				firstName,
-				lastName,
-				email,
-				password: hashedPass,
-				school: populatedSchool,
-				verToken,
-				verTokenExpDate: Date.now() + 24 * 60 * 1000,
-				contacts,
-			});
+		//set headers
+		genJwTok(res, teacher._id);
+		//lets send the email containing the cerification token that is required
+		await sendVerMail(teacher.verToken);
 
-			//set headers
-			genJwTok(res, teacher._id);
-			//lets send the email containing the cerification token that is required
-			await sendVerMail(teacher.verToken);
+		//send response
 
-			//send response
-
-			sendSucess(res, 'Successfully created new user !', teacher, 201);
-		}
+		sendSucess(res, 'Successfully created new user !', teacher, 201);
 	} catch (error) {
 		res.status(500).json({
 			success: false,
 			message: 'There is a problem on our end !',
 		});
 		console.log(error);
+	}
+};
+
+export const login = async (req, res) => {
+	const { school } = req.params;
+	const { email, password, firstName } = req.body;
+	try {
+		const alrExists = await User.findOne({ email: email });
+		if (!alrExists) {
+			return sendError(res, 'Oops looks like you do not have an account !', 401);
+		}
+
+		const passValid = await bcrypt.compare(password, alrExists.password);
+
+		if (!passValid) {
+			return sendError(res, 'Incorrect password try again !', 401);
+		}
+
+		genJwTok(res, alrExists._id);
+
+		return sendSucess(res, 'Logged in !', alrExists, 200);
+	} catch (error) {
+		console.log(error);
+
+		sendError(res, error.message);
 	}
 };
 
