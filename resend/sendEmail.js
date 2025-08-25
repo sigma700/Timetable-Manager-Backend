@@ -1,7 +1,7 @@
 //here is where we will send the email
 
 import { resend } from './config.js';
-import { demoMailPlate, verifMailPlate, welcomeMailPlate } from './mailTemplate.js';
+import { demoMailPlate, schoolIdPLate, verifMailPlate, welcomeMailPlate } from './mailTemplate.js';
 //email for account verification after the user has set up an account !
 export const sendVerMail = async (verToken) => {
 	try {
@@ -56,5 +56,20 @@ export const sendDemoMail = async (fullName, email, schoolName, date, time) => {
 	} catch (error) {
 		console.error('Error sending demo email:', error);
 		throw error;
+	}
+};
+
+export const sendIdMail = async (schoolId) => {
+	try {
+		const { data, error } = await resend.emails.send({
+			from: 'Acme <onboarding@resend.dev>',
+			to: ['allankirimi65@gmail.com'], //set it to mine before production but after that i will add the feature such that the actual user is the one who will get the legit email
+			subject: 'Here is your schoolId',
+			html: schoolIdPLate.replace('{schoolId}', schoolId),
+		});
+	} catch (error) {
+		console.log(error);
+
+		console.log('An error occured with sending the email !', error);
 	}
 };

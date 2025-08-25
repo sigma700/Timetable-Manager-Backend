@@ -9,6 +9,7 @@ import { ListOfTechers } from '../database/model/teachers.js';
 import { generateSimpleTimetable } from '../../service/genTable.js';
 import { sendError, sendSucess } from '../../utils/sendError.js';
 import { User } from '../database/model/users.js';
+import { sendIdMail } from '../../resend/sendEmail.js';
 
 export const listSchool = async (req, res) => {
 	try {
@@ -26,6 +27,10 @@ export const listSchool = async (req, res) => {
 export const listSubjects = async (req, res) => {
 	try {
 		const { schoolId } = req.params;
+
+		//lets send the timetable id to the users email
+		await sendIdMail(schoolId);
+
 		const { names } = req.body;
 
 		if (!schoolId || !Array.isArray(names) || names.length === 0) {
@@ -174,6 +179,10 @@ export const listTeachers = async (req, res) => {
 export const genTimetableHandler = async (req, res) => {
 	try {
 		const { schoolId } = req.params;
+
+		//lets send the timetable id to the users email
+		await sendIdMail(schoolId);
+
 		const { name, config } = req.body;
 		const userId = req.userId;
 
@@ -201,7 +210,7 @@ export const genTimetableHandler = async (req, res) => {
 		// Update the creator (admin/teacher who generated the timetable)
 		await User.findByIdAndUpdate(userId, { $push: { timetables: timetable._id } }, { new: true });
 
-		return sendSucess(res, 'Timetable generated ans saved to the database !', timetable, 201);
+		return sendSucess(res, 'Timetable generated and saved to the database !', timetable, 201);
 	} catch (error) {
 		console.error('Timetable generation error:', error);
 		res.status(500).json({
