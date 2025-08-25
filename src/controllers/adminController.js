@@ -293,7 +293,7 @@ export const getTimetable = async (req, res) => {
 		});
 
 		if (!timetable) {
-			return sendError(res, 'Timetable not found or access denied', 404);
+			return sendError(res, 'No timetables found !', 404);
 		}
 
 		sendSucess(res, 'Here is the timetable', timetable, 200);

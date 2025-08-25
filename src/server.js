@@ -6,6 +6,7 @@ import { router } from './routes/userRoutes.js';
 // import { lessonRouter } from './routes/lessonsRoute.js';
 import { dataRouter } from './routes/dataRouter.js';
 import cookieParser from 'cookie-parser';
+import { demoRoute } from './routes/demoRouter.js';
 
 const app = express();
 const port = process.env.PORT;
@@ -20,7 +21,7 @@ app.use(
 	})
 );
 
-app.use('/api', router, dataRouter);
+app.use('/api', router, dataRouter, demoRoute);
 //middleware for checking overlaps
 
 //the route in the middleware is for the users account creation logic

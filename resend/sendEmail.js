@@ -1,7 +1,7 @@
 //here is where we will send the email
 
 import { resend } from './config.js';
-import { verifMailPlate, welcomeMailPlate } from './mailTemplate.js';
+import { demoMailPlate, verifMailPlate, welcomeMailPlate } from './mailTemplate.js';
 //email for account verification after the user has set up an account !
 export const sendVerMail = async (verToken) => {
 	try {
@@ -28,5 +28,33 @@ export const senWelMail = async (email, firstName) => {
 		});
 	} catch (error) {
 		console.log('Error sending verification error', error);
+	}
+};
+export const sendDemoMail = async (fullName, email, schoolName, date, time) => {
+	try {
+		const emailContent = demoMailPlate
+			.replace(/{fullName}/g, fullName)
+			.replace(/{email}/g, email)
+			.replace(/{schoolName}/g, schoolName)
+			.replace(/{date}/g, date)
+			.replace(/{time}/g, time);
+
+		const { data, error } = await resend.emails.send({
+			from: 'Timetable Manager <demo@timetablemanager.com>',
+			to: ['allankirimi65@gmail.com'],
+			subject: `Demo Request from ${fullName}`,
+			html: emailContent,
+		});
+
+		if (error) {
+			console.error('Resend error:', error);
+			throw error;
+		}
+
+		console.log('Demo email sent successfully:', data);
+		return data;
+	} catch (error) {
+		console.error('Error sending demo email:', error);
+		throw error;
 	}
 };
