@@ -6,23 +6,23 @@ import { sendError, sendSucess } from '../../utils/sendError.js';
 import { Demo } from '../database/model/demos.js';
 
 const getDemo = async (req, res) => {
-	const { fullName, email, schoolName, date, time } = req.body;
+	const { fullName, email, schName, date, time } = req.body;
 	try {
 		//now lets just create the demo into the database
-		if (!fullName || !email || !schoolName || !time || !date) {
+		if (!fullName || !email || !schName || !time || !date) {
 			return sendError(res, 'Please fill out the required fields', 400);
 		}
 		const createdDemo = await Demo.create({
 			fullName: fullName,
 			email: email,
-			schoolName: schoolName,
+			schoolName: schName,
 			date: date,
 			time: time,
 		});
 
-		sendSucess(res, 'Demo was created !', createdDemo, 200);
+		sendDemoMail(fullName, email, schName, date, time);
 
-		sendDemoMail(fullName, email, schoolName, date, time);
+		sendSucess(res, 'Demo was created !', createdDemo, 200);
 	} catch (error) {
 		sendError(res, error.message);
 	}

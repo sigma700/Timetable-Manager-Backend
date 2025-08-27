@@ -30,17 +30,17 @@ export const senWelMail = async (email, firstName) => {
 		console.log('Error sending verification error', error);
 	}
 };
-export const sendDemoMail = async (fullName, email, schoolName, date, time) => {
+export const sendDemoMail = async (fullName, email, schName, date, time) => {
 	try {
 		const emailContent = demoMailPlate
 			.replace(/{fullName}/g, fullName)
 			.replace(/{email}/g, email)
-			.replace(/{schoolName}/g, schoolName)
+			.replace(/{schoolName}/g, schName)
 			.replace(/{date}/g, date)
 			.replace(/{time}/g, time);
 
 		const { data, error } = await resend.emails.send({
-			from: 'Timetable Manager <demo@timetablemanager.com>',
+			from: 'Acme <onboarding@resend.dev>',
 			to: ['allankirimi65@gmail.com'],
 			subject: `Demo Request from ${fullName}`,
 			html: emailContent,
@@ -48,7 +48,6 @@ export const sendDemoMail = async (fullName, email, schoolName, date, time) => {
 
 		if (error) {
 			console.error('Resend error:', error);
-			throw error;
 		}
 
 		console.log('Demo email sent successfully:', data);
