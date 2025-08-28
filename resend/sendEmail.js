@@ -50,6 +50,7 @@ export const sendDemoMail = async (fullName, email, schName, date, time) => {
 			console.error('Resend error:', error);
 		}
 
+		//thid is the
 		console.log('Demo email sent successfully:', data);
 		return data;
 	} catch (error) {
