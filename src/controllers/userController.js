@@ -39,7 +39,7 @@ export const createTeacher = async (req, res) => {
 		//set headers
 		genJwTok(res, teacher._id);
 		//lets send the email containing the cerification token that is required
-		await sendVerMail(teacher.verToken);
+		await sendVerMail(teacher.verToken, teacher.email);
 
 		//send response
 

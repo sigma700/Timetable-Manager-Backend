@@ -3,11 +3,11 @@
 import { resend } from './config.js';
 import { demoMailPlate, schoolIdPLate, verifMailPlate, welcomeMailPlate } from './mailTemplate.js';
 //email for account verification after the user has set up an account !
-export const sendVerMail = async (verToken) => {
+export const sendVerMail = async (verToken, email) => {
 	try {
 		const { data, error } = await resend.emails.send({
 			from: 'Acme <onboarding@resend.dev>',
-			to: ['allankirimi65@gmail.com'], //set it to mine before production but after that i will add the feature such that the actual user is the one who will get the legit email
+			to: [email], //set it to mine before production but after that i will add the feature such that the actual user is the one who will get the legit email
 			subject: 'Verify your email !',
 			html: verifMailPlate.replace('{verToken}', verToken),
 		});
