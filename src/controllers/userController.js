@@ -83,6 +83,10 @@ export const login = async (req, res) => {
 export const veriAcc = async (req, res) => {
 	const { code } = req.body; //lets get the code from the user inputs
 
+	if (!code) {
+		return sendError(res, 'Please have input the code');
+	}
+
 	try {
 		//lets check if the person actually has the account
 
