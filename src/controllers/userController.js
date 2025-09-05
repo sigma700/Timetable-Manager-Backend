@@ -6,7 +6,7 @@ import { genJwTok } from '../../utils/genJwToken.js';
 import { generateToken } from '../../utils/genToken.js';
 import { School } from '../database/model/school.js';
 import { sendError, sendSucess } from '../../utils/sendError.js';
-import { sendVerMail, senWelMail } from '../../resend/sendEmail.js';
+// import { sendVerMail, senWelMail } from '../../resend/sendEmail.js';
 
 export const createTeacher = async (req, res) => {
 	//lets enumerate the sign up
@@ -39,8 +39,12 @@ export const createTeacher = async (req, res) => {
 		//set headers
 		genJwTok(res, teacher._id);
 		//lets send the email containing the cerification token that is required
-		await sendVerMail(teacher.verToken, teacher.email);
 
+		// await sendVerMail(teacher.verToken, teacher.email);
+		//assignment
+		teacher.isVerified = true;
+		teacher.verToken = undefined; //token to dissapear for safety
+		teacher.verTokenExpDate = undefined; //date to also dissapear lol
 		//send response
 
 		sendSucess(res, 'Successfully created new user !', teacher, 201);
@@ -84,7 +88,7 @@ export const veriAcc = async (req, res) => {
 	const { code } = req.body; //lets get the code from the user inputs
 
 	if (!code) {
-		return sendError(res, 'Please have input the code');
+		return sendError(res, 'Please have the code !');
 	}
 
 	try {

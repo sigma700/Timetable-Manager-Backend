@@ -3,20 +3,29 @@
 import { resend } from './config.js';
 import { demoMailPlate, schoolIdPLate, verifMailPlate, welcomeMailPlate } from './mailTemplate.js';
 //email for account verification after the user has set up an account !
-export const sendVerMail = async (verToken, email) => {
-	try {
-		const { data, error } = await resend.emails.send({
-			from: 'Acme <onboarding@resend.dev>',
-			to: [email], //set it to mine before production but after that i will add the feature such that the actual user is the one who will get the legit email
-			subject: 'Verify your email !',
-			html: verifMailPlate.replace('{verToken}', verToken),
-		});
-	} catch (error) {
-		console.log(error);
+// export const sendVerMail = async (verToken, email) => {
+// 	try {
+// 		const { data, error } = await resend.emails.send({
+// 			from: 'Acme <onboarding@resend.dev>',
+// 			to: [email],
+// 			subject: 'Verify your email!',
+// 			html: verifMailPlate.replace('{verToken}', verToken),
+// 		});
 
-		console.log('An error occured with sending the email !', error);
-	}
-};
+// 		console.log(`Sending the email to ${email}`);
+
+// 		if (error) {
+// 			console.error('Resend API error:', error);
+// 			throw new Error(`Failed to send email: ${error.message}`);
+// 		}
+
+// 		console.log(`Email sent successfully to ${email}`, data);
+// 		return data;
+// 	} catch (error) {
+// 		console.error('Error sending verification email:', error);
+// 		throw error; // Re-throw to let the caller handle it
+// 	}
+// };
 
 export const senWelMail = async (email, firstName) => {
 	try {
