@@ -10,7 +10,7 @@ import { sendError, sendSucess } from '../../utils/sendError.js';
 
 export const createTeacher = async (req, res) => {
 	//lets enumerate the sign up
-	const { school } = req.params;
+	// const { school } = req.params;
 	const { firstName, lastName, password, email, contacts } = req.body;
 	try {
 		if (!email || !password) {
@@ -19,7 +19,7 @@ export const createTeacher = async (req, res) => {
 
 		//lets populate the school variable so as to be able to access the school name rather than just the school ObjectId
 
-		const populatedSchool = await School.findById({ _id: school }).populate('name');
+		// const populatedSchool = await School.findById({ _id: school }).populate('name');
 
 		const hashedPass = await bcrypt.hash(password, 12);
 		const verToken = generateToken();
@@ -30,7 +30,7 @@ export const createTeacher = async (req, res) => {
 			lastName,
 			email,
 			password: hashedPass,
-			school: populatedSchool,
+			// school,
 			verToken,
 			verTokenExpDate: Date.now() + 24 * 60 * 1000,
 			contacts,
@@ -51,7 +51,7 @@ export const createTeacher = async (req, res) => {
 	} catch (error) {
 		res.status(500).json({
 			success: false,
-			message: 'There is a problem on our end !',
+			message: error.message,
 		});
 		console.log(error);
 	}
