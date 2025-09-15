@@ -10,13 +10,32 @@ import { generateSimpleTimetable } from '../../service/genTable.js';
 import { sendError, sendSucess } from '../../utils/sendError.js';
 import { User } from '../database/model/users.js';
 import { sendIdMail } from '../../resend/sendEmail.js';
+import mongoose from 'mongoose';
 
 export const listSchool = async (req, res) => {
 	try {
 		const { name } = req.body;
-		//create the school
+
+		const userId = req.userId;
+
+		console.log(userId);
+
+		// Create the school
 		const createdSchool = await School.create({ name });
-		return sendSucess(res, 'School created successfully !', createdSchool);
+
+		// If userId is provided, associate the school with that user
+		if (userId) {
+			await User.findByIdAndUpdate(userId, { school: createdSchool._id }, { new: true });
+		}
+
+		const schoolId = createdSchool._id;
+
+		await sendIdMail(schoolId);
+
+		return sendSucess(res, 'School created successfully!', {
+			school: createdSchool,
+			userId: userId || null,
+		});
 	} catch (error) {
 		sendError(res, error.message);
 	}
@@ -26,20 +45,37 @@ export const listSchool = async (req, res) => {
 
 export const listSubjects = async (req, res) => {
 	try {
-		const { schoolId } = req.params;
+		const userId = req.userId; // From authentication middleware
 
-		//lets send the timetable id to the users email
-		await sendIdMail(schoolId);
+		// Get user with school populated
+		const user = await User.findById(userId).populate('school');
 
+		if (!user || !user.school) {
+			return sendError(res, 'User is not associated with any school', 400);
+		}
+
+		const schoolId = user.school._id;
 		const { names } = req.body;
 
-		if (!schoolId || !Array.isArray(names) || names.length === 0) {
+		console.log('SchoolId from user object:', schoolId);
+
+		// Add ObjectId validation
+		if (!schoolId || schoolId === 'undefined' || !mongoose.Types.ObjectId.isValid(schoolId)) {
+			return sendError(res, 'Invalid or missing school ID', 400);
+		}
+
+		if (!Array.isArray(names) || names.length === 0) {
 			return sendError(res, 'Missing or invalid subject data', 400);
 		}
 
+		const schoolObjectId = new mongoose.Types.ObjectId(schoolId);
+
 		const newSubjects = names
 			.filter((name) => typeof name === 'string' && name.trim())
-			.map((name) => ({ name: name.trim(), school: schoolId }));
+			.map((name) => ({
+				name: name.trim(),
+				school: schoolObjectId,
+			}));
 
 		if (newSubjects.length === 0) {
 			return sendError(res, 'No valid subject names provided', 400);
@@ -50,6 +86,12 @@ export const listSubjects = async (req, res) => {
 		return sendSucess(res, `Created ${createdSubjects.length} subject(s)!`, createdSubjects, 201);
 	} catch (error) {
 		console.error(error.message);
+
+		// Handle duplicate key errors
+		if (error.code === 11000) {
+			return sendError(res, 'Some subjects already exist in this school', 400);
+		}
+
 		sendError(res, error.message);
 	}
 };
@@ -57,11 +99,26 @@ export const listSubjects = async (req, res) => {
 //this is my code do not dare and steal it because i will sue you as a thief of mental property
 export const listClassData = async (req, res) => {
 	try {
-		const { schoolId } = req.params;
+		const userId = req.userId; // From authentication middleware
+
+		// Get user with school populated
+		const user = await User.findById(userId).populate('school');
+
+		if (!user || !user.school) {
+			return sendError(res, 'User is not associated with any school', 400);
+		}
+
+		const schoolId = user.school._id; // Get schoolId from user object
 		const { type, minLevel, maxLevel, labels } = req.body;
 
+		console.log('SchoolId from user object:', schoolId);
+
 		// Validation
-		if (!schoolId || !type || minLevel === undefined || maxLevel === undefined || !labels?.length) {
+		if (!schoolId || schoolId === 'undefined' || !mongoose.Types.ObjectId.isValid(schoolId)) {
+			return sendError(res, 'Invalid or missing school ID', 400);
+		}
+
+		if (!type || minLevel === undefined || maxLevel === undefined || !labels?.length) {
 			return sendError(res, 'Missing required fields', 400);
 		}
 
@@ -78,9 +135,10 @@ export const listClassData = async (req, res) => {
 			return sendError(res, 'Invalid level range', 400);
 		}
 
-		//lets get all the subjects taught in the schoool instead of having it in automatic
+		const schoolObjectId = new mongoose.Types.ObjectId(schoolId);
 
-		const allSubjects = await Subject.find({ school: schoolId });
+		// Get all subjects taught in the school
+		const allSubjects = await Subject.find({ school: schoolObjectId });
 		const subjectIds = allSubjects.map((subject) => subject._id);
 
 		const classes = [];
@@ -91,14 +149,13 @@ export const listClassData = async (req, res) => {
 					type: type.trim(),
 					level,
 					label,
-					school: schoolId,
+					school: schoolObjectId, // Use ObjectId
 					isOccupied: false,
 					subjects: subjectIds,
 				});
 			}
 		}
 
-		// Create all classes
 		const createdClasses = await ClassData.insertMany(classes);
 
 		return sendSucess(res, `${createdClasses.length} classes created`, createdClasses, 201);
@@ -113,12 +170,24 @@ export const listClassData = async (req, res) => {
 
 export const listTeachers = async (req, res) => {
 	try {
-		const { schoolId } = req.params;
+		const userId = req.userId;
+
+		const user = await User.findById(userId).populate('school');
+
+		if (!user || !user.school) {
+			return sendError(res, 'User is not associated with any school', 400);
+		}
+
+		const schoolId = user.school._id; // Get schoolId from user object
 		const { name, subjects, classesNames } = req.body;
 
-		// Validation
+		console.log('SchoolId from user object:', schoolId);
+
+		if (!schoolId || schoolId === 'undefined' || !mongoose.Types.ObjectId.isValid(schoolId)) {
+			return sendError(res, 'Invalid or missing school ID', 400);
+		}
+
 		if (
-			!schoolId ||
 			!name ||
 			!Array.isArray(subjects) ||
 			subjects.length === 0 ||
@@ -127,17 +196,22 @@ export const listTeachers = async (req, res) => {
 			return sendError(res, 'Missing or invalid teacher data', 400);
 		}
 
-		// Check if teacher already exists
-		const existing = await ListOfTechers.findOne({ name, school: schoolId });
+		const schoolObjectId = new mongoose.Types.ObjectId(schoolId);
+
+		// Check if teacher already exists - use ObjectId
+		const existing = await ListOfTechers.findOne({
+			name,
+			school: schoolObjectId,
+		});
+
 		if (existing) {
 			return sendError(res, 'Teacher already exists in this school!', 400);
 		}
 
-		//find all subjects id using their input names
-
+		// Use ObjectId for all queries
 		const subjNames = await Subject.find({
 			name: { $in: subjects },
-			school: schoolId,
+			school: schoolObjectId,
 		});
 
 		const subjIds = subjNames.map((s) => s._id);
@@ -145,7 +219,7 @@ export const listTeachers = async (req, res) => {
 		// Find all class IDs for the provided class names
 		const classes = await ClassData.find({
 			name: { $in: classesNames },
-			school: schoolId,
+			school: schoolObjectId,
 		});
 
 		if (classes.length !== classesNames.length) {
@@ -160,7 +234,7 @@ export const listTeachers = async (req, res) => {
 		const createdTeacher = await ListOfTechers.create({
 			name: name.trim(),
 			classes: classIds,
-			school: schoolId,
+			school: schoolObjectId, // Use ObjectId here too
 			subjects: subjIds,
 		});
 
@@ -178,10 +252,9 @@ export const listTeachers = async (req, res) => {
 
 export const genTimetableHandler = async (req, res) => {
 	try {
-		const { schoolId } = req.params;
+		// const { schoolId } = req.params;
 
 		//lets send the timetable id to the users email
-		await sendIdMail(schoolId);
 
 		const { name, config } = req.body;
 		const userId = req.userId;
@@ -192,6 +265,16 @@ export const genTimetableHandler = async (req, res) => {
 
 		if (!userId) {
 			return sendError(res, 'User  not authenticated !', 401);
+		}
+
+		const user = await User.findById(userId).populate('school');
+
+		const schoolId = user.school._id; //problem is over here !
+
+		await sendIdMail(schoolId);
+		//check if the user is associated with any school at first !
+		if (!schoolId) {
+			return sendError(res, 'User is not associated with any school!', 400);
 		}
 
 		// Generate timetable data
