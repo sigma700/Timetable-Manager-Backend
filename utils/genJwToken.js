@@ -8,7 +8,7 @@ export const genJwTok = (res, userId) => {
 	res.cookie('token', token, {
 		httpOnly: true,
 		secure: process.env.NODE_ENV === 'production',
-		sameSite: 'strict',
+		sameSite: 'none',
 	});
 
 	return token;
