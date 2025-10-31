@@ -41,8 +41,6 @@ export const listSchool = async (req, res) => {
 	}
 };
 
-//done annd dusted all along
-
 export const listSubjects = async (req, res) => {
 	try {
 		const userId = req.userId; // From authentication middleware
@@ -87,7 +85,7 @@ export const listSubjects = async (req, res) => {
 	} catch (error) {
 		console.error(error.message);
 
-		// Handle duplicate key errors
+		// Handle duplicate key errors kawabangaa mate
 		if (error.code === 11000) {
 			return sendError(res, 'Some subjects already exist in this school', 400);
 		}

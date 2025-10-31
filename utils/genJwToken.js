@@ -10,6 +10,11 @@ export const genJwTok = (res, userId) => {
     secure: process.env.NODE_ENV === "production",
     sameSite: "none",
   });
+  // res.cookie('token', token, {
+  // 	httpOnly: true,
+  // 	secure: process.env.NODE_ENV === 'production',
+  // 	sameSite: 'none',
+  // });
 
   return token;
 };

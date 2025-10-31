@@ -36,7 +36,6 @@ const classSchema = new Schema({
 	],
 });
 
-// Compound unique index for school + name combination
 classSchema.index({ school: 1, name: 1 }, { unique: true });
 
 const ClassData = mongoose.model('ClassData', classSchema);
