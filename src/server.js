@@ -1,12 +1,12 @@
-import express from 'express';
-import cors from 'cors';
-import 'dotenv/config';
-import { connectDb } from './database/config.js';
-import { router } from './routes/userRoutes.js';
+import express from "express";
+import cors from "cors";
+import "dotenv/config";
+import {connectDb} from "./database/config.js";
+import {router} from "./routes/userRoutes.js";
 // import { lessonRouter } from './routes/lessonsRoute.js';
-import { dataRouter } from './routes/dataRouter.js';
-import cookieParser from 'cookie-parser';
-import { demoRoute } from './routes/demoRouter.js';
+import {dataRouter} from "./routes/dataRouter.js";
+import cookieParser from "cookie-parser";
+import {demoRoute} from "./routes/demoRouter.js";
 
 const app = express();
 const port = process.env.PORT;
@@ -14,27 +14,27 @@ const port = process.env.PORT;
 app.use(express.json());
 app.use(cookieParser());
 app.use(
-	cors({
-		origin: 'https://protiba.onrender.com',
-		methods: ['GET , POST , PUT , DELETE , PATCH'],
-		credentials: true,
-	})
+  cors({
+    origin: "https://protiba.onrender.com",
+    methods: ["GET , POST , PUT , DELETE , PATCH"],
+    credentials: true,
+  })
 );
 
-app.use('/api', router, dataRouter, demoRoute);
+app.use("/api", router, dataRouter, demoRoute);
 //middleware for checking overlaps
 
 //the route in the middleware is for the users account creation logic
 
 connectDb();
 
-app.get('/', (req, res) => {
-	res.status(200).json({
-		success: true,
-		message: 'Here is the basic route for overall testing!',
-	});
+app.get("/", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "Here is the basic route for overall testing!",
+  });
 });
 
 app.listen(port, () => {
-	console.log(`Server is listening on : http://localhost:${port}`);
+  console.log(`Server is listening on : http://localhost:${port}`);
 });
