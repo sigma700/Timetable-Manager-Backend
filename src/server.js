@@ -15,16 +15,13 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(
   cors({
-    origin: "https://protiba.onrender.com",
+    origin: "http://localhost:5173",
     methods: ["GET , POST , PUT , DELETE , PATCH"],
     credentials: true,
-  })
+  }),
 );
 
 app.use("/api", router, dataRouter, demoRoute);
-//middleware for checking overlaps
-
-//the route in the middleware is for the users account creation logic
 
 connectDb();
 
