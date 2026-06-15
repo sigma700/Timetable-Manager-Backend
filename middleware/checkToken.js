@@ -1,25 +1,29 @@
 //checking users decoded cookie
 
-import { sendError, sendSucess } from '../utils/sendError.js';
-import jwt from 'jsonwebtoken';
+import {sendError, sendSucess} from "../utils/sendError.js";
+import jwt from "jsonwebtoken";
 export const verifyToken = async (req, res, next) => {
-	const token = req.cookies.token;
+  const token = req.cookies.token;
 
-	if (!token) {
-		return sendError(res, 'Are you logged in yet ?', 401); //here there is a problem !
-	}
+  if (!token) {
+    return sendError(res, "Are you logged in yet ?", 401); //here there is a problem !
+  }
 
-	try {
-		const decodedToken = jwt.verify(token, process.env.WEBTOKEN);
-		if (!decodedToken) {
-			return sendError(res, 'Failed could not decode the token !', 500);
-		}
+  try {
+    const decodedToken = jwt.verify(token, process.env.WEBTOKEN);
+    if (!decodedToken) {
+      return sendError(res, "Failed could not decode the token !", 500);
+    }
+    req.user = {
+      id: user._id,
+      schoolId: user.school,
+      role: user.role,
+    };
+    req.userId = decodedToken.userId;
+    next(); //gives the logic to any of the related functions
+  } catch (error) {
+    console.log(error);
 
-		req.userId = decodedToken.userId;
-		next(); //gives the logic to any of the related functions
-	} catch (error) {
-		console.log(error);
-
-		sendError(res, error.message);
-	}
+    sendError(res, error.message);
+  }
 };
