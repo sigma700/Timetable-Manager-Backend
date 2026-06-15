@@ -21,7 +21,7 @@ app.use(
   }),
 );
 
-app.use("/api", router, dataRouter, demoRoute);
+app.use("/api", router, dataRouter, demoRoute, activityRouter);
 
 connectDb();
 

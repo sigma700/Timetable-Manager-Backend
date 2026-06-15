@@ -6,6 +6,7 @@ import {genJwTok} from "../../utils/genJwToken.js";
 import {generateToken} from "../../utils/genToken.js";
 import {School} from "../database/model/school.js";
 import {sendError, sendSucess} from "../../utils/sendError.js";
+import {trackActivity} from "../../service/activityService.js";
 // import { sendVerMail, senWelMail } from '../../resend/sendEmail.js';
 
 export const createTeacher = async (req, res) => {
@@ -16,10 +17,6 @@ export const createTeacher = async (req, res) => {
     if (!email || !password) {
       return sendError(res, "Please fill out the required areas !");
     }
-
-    //lets populate the school variable so as to be able to access the school name rather than just the school ObjectId
-
-    // const populatedSchool = await School.findById({ _id: school }).populate('name');
 
     const hashedPass = await bcrypt.hash(password, 12);
     const verToken = generateToken();
@@ -32,7 +29,7 @@ export const createTeacher = async (req, res) => {
       password: hashedPass,
       // school,
       verToken,
-      verTokenExpDate: Date.now() + 24 * 60 * 1000,
+      verTokenExpDate: Date.now() + 24 * 60 * 60 * 1000,
       contacts,
     });
 
@@ -45,8 +42,21 @@ export const createTeacher = async (req, res) => {
     teacher.isVerified = true;
     teacher.verToken = undefined; //token to dissapear for safety
     teacher.verTokenExpDate = undefined; //date to also dissapear lol
-    //send response
 
+    trackActivity({
+      event: "USER_LOGGED_IN",
+      eventCategory: "AUTH",
+      userId: alrExists._id,
+      schoolId: alrExists.school || null,
+      metadata: {
+        entityId: alrExists._id,
+        entityName: `${alrExists.firstName} ${alrExists.lastName}`,
+        entityEmail: alrExists.email,
+        hasSchool: !!alrExists.school,
+      },
+    });
+
+    //send response
     sendSucess(res, "Successfully created new user !", teacher, 201);
   } catch (error) {
     res.status(500).json({
@@ -66,7 +76,7 @@ export const login = async (req, res) => {
       return sendError(
         res,
         "Oops looks like you do not have an account !",
-        401
+        401,
       );
     }
 
@@ -77,6 +87,18 @@ export const login = async (req, res) => {
     }
 
     genJwTok(res, alrExists._id);
+
+    trackActivity({
+      event: "USER_LOGGED_IN",
+      eventCategory: "AUTH",
+      userId: alrExists._id,
+      schoolId: alrExists.school || null,
+      metadata: {
+        entityId: alrExists._id,
+        entityName: `${alrExists.firstName} ${alrExists.lastName}`,
+        entityEmail: alrExists.email,
+      },
+    });
 
     return sendSucess(res, "Logged in !", alrExists, 200);
   } catch (error) {
@@ -114,6 +136,18 @@ export const veriAcc = async (req, res) => {
     //save to the db
 
     await isExisting.save();
+
+    trackActivity({
+      event: "USER_EMAIL_VERIFIED",
+      eventCategory: "AUTH",
+      userId: isExisting._id,
+      schoolId: isExisting.school || null,
+      metadata: {
+        entityId: isExisting._id,
+        entityName: `${isExisting.firstName} ${isExisting.lastName}`,
+        entityEmail: isExisting.email,
+      },
+    });
 
     //TODO: Send a welcome email to the user after successfull verification here
     await senWelMail(isExisting.email, isExisting.firstName);

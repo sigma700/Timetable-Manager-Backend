@@ -57,7 +57,13 @@ const activityLogSchema = new Schema(
     },
     metadata: {
       type: Schema.Types.Mixed,
+      registrationStage: "PRE_INSTITUTION",
       default: {},
+      totalClasses,
+      totalTeachers,
+      totalSubjects,
+      periodsPerDay,
+      generationDurationMs,
     },
     createdAt: {
       type: Date,
