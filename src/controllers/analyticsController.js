@@ -1,6 +1,7 @@
 import {User} from "../database/model/users.js";
 import {getInstitutionOverview} from "../../service/institutionAnalyticsService.js";
 import {getTeacherWorkload} from "../../service/teacherAnalyticsService.js";
+import {getSubjectDistribution} from "../../service/subjectAnalyticsService.js";
 import {sendError, sendSucess} from "../../utils/sendError.js";
 
 /**
@@ -53,6 +54,35 @@ export const getTeacherWorkloadHandler = async (req, res) => {
       res,
       "Teacher workload analytics retrieved successfully",
       workload,
+      200,
+    );
+  } catch (error) {
+    console.log(error);
+    sendError(res, error.message);
+  }
+};
+
+/**
+ * GET /api/analytics/subjects
+ * Returns subject distribution analytics for the authenticated user's school.
+ * Includes periods per subject, allocation %, class count, and daily average.
+ */
+export const getSubjectDistributionHandler = async (req, res) => {
+  try {
+    const user = await User.findById(req.userId).populate("school");
+
+    if (!user || !user.school) {
+      return sendError(res, "User is not associated with any school", 400);
+    }
+
+    const schoolId = user.school._id;
+
+    const distribution = await getSubjectDistribution(schoolId);
+
+    return sendSucess(
+      res,
+      "Subject distribution analytics retrieved successfully",
+      distribution,
       200,
     );
   } catch (error) {

@@ -2,6 +2,7 @@ import {Router} from "express";
 import {
   getInstitutionOverviewHandler,
   getTeacherWorkloadHandler,
+  getSubjectDistributionHandler,
 } from "../controllers/analyticsController.js";
 import {verifyToken} from "../../middleware/checkToken.js";
 
@@ -16,6 +17,11 @@ analyticsRouter.get(
   "/analytics/teachers",
   verifyToken,
   getTeacherWorkloadHandler,
+);
+analyticsRouter.get(
+  "/analytics/subjects",
+  verifyToken,
+  getSubjectDistributionHandler,
 );
 
 export {analyticsRouter};
