@@ -2,6 +2,7 @@
 
 import {sendError, sendSucess} from "../utils/sendError.js";
 import jwt from "jsonwebtoken";
+
 export const verifyToken = async (req, res, next) => {
   const token = req.cookies.token;
 
@@ -11,19 +12,15 @@ export const verifyToken = async (req, res, next) => {
 
   try {
     const decodedToken = jwt.verify(token, process.env.WEBTOKEN);
+
     if (!decodedToken) {
       return sendError(res, "Failed could not decode the token !", 500);
     }
-    req.user = {
-      id: user._id,
-      schoolId: user.school,
-      role: user.role,
-    };
+
     req.userId = decodedToken.userId;
     next(); //gives the logic to any of the related functions
   } catch (error) {
     console.log(error);
-
     sendError(res, error.message);
   }
 };

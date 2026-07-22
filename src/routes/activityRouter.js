@@ -12,4 +12,4 @@ activityRouter.get("/activity/recent", verifyToken, getRecentActivityHandler);
 activityRouter.get("/activity", verifyToken, getActivityFeedHandler);
 activityRouter.get("/activity/summary", verifyToken, getActivitySummaryHandler);
 
-export default activityRouter;
+export {activityRouter};

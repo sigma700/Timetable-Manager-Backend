@@ -20,6 +20,7 @@ export const createTeacher = async (req, res) => {
 
     const hashedPass = await bcrypt.hash(password, 12);
     const verToken = generateToken();
+    const alrExists = await User.findOne({email: email});
 
     //creation of the user
     const teacher = await User.create({

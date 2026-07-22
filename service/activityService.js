@@ -1,4 +1,3 @@
-import mongoose from "mongoose";
 import {ActivityLog} from "../src/database/model/activityLog.js";
 
 // ─────────────────────────────────────────────
@@ -15,7 +14,7 @@ import {ActivityLog} from "../src/database/model/activityLog.js";
  * @param {string}  params.userId         - ObjectId of the user performing the action
  * @param {string}  [params.schoolId]     - ObjectId of the school (optional for pre-school events)
  * @param {Object}  [params.metadata]     - Event-specific analytics payload
- * @param {string}  [params.source]       - Origin: 'WEB' | 'API' | 'SYSTEM'
+ * @param {string}  [params.source]       - Origin: 'WEB_APP' | 'API' | 'SYSTEM' | 'ADMIN'
  */
 export const trackActivity = async ({
   event,
@@ -23,7 +22,7 @@ export const trackActivity = async ({
   userId,
   schoolId = null,
   metadata = {},
-  source = "WEB",
+  source = "WEB_APP",
 }) => {
   try {
     await ActivityLog.create({
@@ -56,7 +55,7 @@ export const trackActivity = async ({
  * @returns {Promise<Array>}
  */
 export const getRecentActivity = async (schoolId, limit = 10) => {
-  const safeLimit = Math.min(limit, 100);
+  const safeLimit = Math.min(limit, 20);
 
   const activities = await ActivityLog.find({schoolId})
     .sort({createdAt: -1})
@@ -90,9 +89,7 @@ export const getActivityFeed = async ({
   startDate,
   endDate,
 }) => {
-  const matchStage = {
-    schoolId: new mongoose.Types.ObjectId(schoolId),
-  };
+  const matchStage = {schoolId};
 
   if (event) matchStage.event = event;
   if (eventCategory) matchStage.eventCategory = eventCategory;
@@ -153,7 +150,7 @@ export const getActivityFeed = async ({
  * @param {string}  [params.eventCategory]  - Optionally scope to one category
  * @param {string}  [params.startDate]      - ISO date string
  * @param {string}  [params.endDate]        - ISO date string
- * @returns {Promise<Object>}  e.g. { USER_LOGGED_IN: 42, TIMETABLE_GENERATED: 5 }
+ * @returns {Promise<Object>}  e.g. { USER_LOGGED_IN: { count: 42, lastOccurred: Date } }
  */
 export const getActivitySummary = async ({
   schoolId,
@@ -183,8 +180,6 @@ export const getActivitySummary = async ({
     {$sort: {count: -1}},
   ]);
 
-  // Shape into a flat object for easy dashboard consumption
-  // { USER_LOGGED_IN: { count: 42, lastOccurred: Date }, ... }
   const summary = {};
   for (const entry of grouped) {
     summary[entry._id] = {

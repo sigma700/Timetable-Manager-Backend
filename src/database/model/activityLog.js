@@ -41,7 +41,7 @@ const activityLogSchema = new Schema(
       type: String,
       required: true,
       enum: ["WEB_APP", "API", "SYSTEM", "ADMIN"],
-      default: "WEB",
+      default: "WEB_APP",
     },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -57,13 +57,7 @@ const activityLogSchema = new Schema(
     },
     metadata: {
       type: Schema.Types.Mixed,
-      registrationStage: "PRE_INSTITUTION",
       default: {},
-      totalClasses,
-      totalTeachers,
-      totalSubjects,
-      periodsPerDay,
-      generationDurationMs,
     },
     createdAt: {
       type: Date,

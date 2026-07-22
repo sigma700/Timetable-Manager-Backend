@@ -7,6 +7,7 @@ import {router} from "./routes/userRoutes.js";
 import {dataRouter} from "./routes/dataRouter.js";
 import cookieParser from "cookie-parser";
 import {demoRoute} from "./routes/demoRouter.js";
+import {activityRouter} from "./routes/activityRouter.js";
 
 const app = express();
 const port = process.env.PORT;
