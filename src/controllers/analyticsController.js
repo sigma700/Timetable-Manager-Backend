@@ -1,5 +1,6 @@
 import {User} from "../database/model/users.js";
 import {getInstitutionOverview} from "../../service/institutionAnalyticsService.js";
+import {getTeacherWorkload} from "../../service/teacherAnalyticsService.js";
 import {sendError, sendSucess} from "../../utils/sendError.js";
 
 /**
@@ -23,6 +24,35 @@ export const getInstitutionOverviewHandler = async (req, res) => {
       res,
       "Institution overview retrieved successfully",
       overview,
+      200,
+    );
+  } catch (error) {
+    console.log(error);
+    sendError(res, error.message);
+  }
+};
+
+/**
+ * GET /api/analytics/teachers
+ * Returns workload analytics for all teachers in the authenticated user's school.
+ * Includes assigned periods, weekly/daily load, utilization %, subject and class counts.
+ */
+export const getTeacherWorkloadHandler = async (req, res) => {
+  try {
+    const user = await User.findById(req.userId).populate("school");
+
+    if (!user || !user.school) {
+      return sendError(res, "User is not associated with any school", 400);
+    }
+
+    const schoolId = user.school._id;
+
+    const workload = await getTeacherWorkload(schoolId);
+
+    return sendSucess(
+      res,
+      "Teacher workload analytics retrieved successfully",
+      workload,
       200,
     );
   } catch (error) {
