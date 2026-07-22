@@ -2,6 +2,7 @@ import {User} from "../database/model/users.js";
 import {getInstitutionOverview} from "../../service/institutionAnalyticsService.js";
 import {getTeacherWorkload} from "../../service/teacherAnalyticsService.js";
 import {getSubjectDistribution} from "../../service/subjectAnalyticsService.js";
+import {getTimetableHealth} from "../../service/timetableHealthService.js";
 import {sendError, sendSucess} from "../../utils/sendError.js";
 
 /**
@@ -83,6 +84,35 @@ export const getSubjectDistributionHandler = async (req, res) => {
       res,
       "Subject distribution analytics retrieved successfully",
       distribution,
+      200,
+    );
+  } catch (error) {
+    console.log(error);
+    sendError(res, error.message);
+  }
+};
+
+/**
+ * GET /api/analytics/health
+ * Returns a timetable health score for the authenticated user's school.
+ * Includes score, category, issue breakdown, and penalty components.
+ */
+export const getTimetableHealthHandler = async (req, res) => {
+  try {
+    const user = await User.findById(req.userId).populate("school");
+
+    if (!user || !user.school) {
+      return sendError(res, "User is not associated with any school", 400);
+    }
+
+    const schoolId = user.school._id;
+
+    const health = await getTimetableHealth(schoolId);
+
+    return sendSucess(
+      res,
+      "Timetable health score retrieved successfully",
+      health,
       200,
     );
   } catch (error) {

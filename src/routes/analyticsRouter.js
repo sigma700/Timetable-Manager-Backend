@@ -3,6 +3,7 @@ import {
   getInstitutionOverviewHandler,
   getTeacherWorkloadHandler,
   getSubjectDistributionHandler,
+  getTimetableHealthHandler,
 } from "../controllers/analyticsController.js";
 import {verifyToken} from "../../middleware/checkToken.js";
 
@@ -22,6 +23,11 @@ analyticsRouter.get(
   "/analytics/subjects",
   verifyToken,
   getSubjectDistributionHandler,
+);
+analyticsRouter.get(
+  "/analytics/health",
+  verifyToken,
+  getTimetableHealthHandler,
 );
 
 export {analyticsRouter};
