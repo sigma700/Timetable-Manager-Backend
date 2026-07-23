@@ -11,6 +11,7 @@ import {sendError, sendSucess} from "../../utils/sendError.js";
 import {User} from "../database/model/users.js";
 import {sendIdMail} from "../../resend/sendEmail.js";
 import {trackActivity} from "../../service/activityService.js";
+import {createAuditLog} from "../../service/auditService.js";
 import mongoose from "mongoose";
 
 export const listSchool = async (req, res) => {
@@ -46,6 +47,19 @@ export const listSchool = async (req, res) => {
         entityId: createdSchool._id,
         entityName: createdSchool.name,
       },
+    });
+
+    createAuditLog({
+      action: "SCHOOL_CREATED",
+      actionCategory: "INSTITUTION",
+      performedBy: userId,
+      targetId: createdSchool._id,
+      targetModel: "School",
+      previousValue: null,
+      newValue: {name: createdSchool.name},
+      ipAddress: req.ip || req.headers["x-forwarded-for"] || null,
+      userAgent: req.headers["user-agent"] || null,
+      schoolId,
     });
 
     return sendSucess(res, "School created successfully!", {
@@ -326,6 +340,23 @@ export const listTeachers = async (req, res) => {
       },
     });
 
+    createAuditLog({
+      action: "TEACHER_CREATED",
+      actionCategory: "TEACHER",
+      performedBy: userId,
+      targetId: createdTeacher._id,
+      targetModel: "Teacher",
+      previousValue: null,
+      newValue: {
+        name: createdTeacher.name,
+        subjectCount: subjIds.length,
+        classCount: classIds.length,
+      },
+      ipAddress: req.ip || req.headers["x-forwarded-for"] || null,
+      userAgent: req.headers["user-agent"] || null,
+      schoolId,
+    });
+
     return sendSucess(
       res,
       "Successfully created teacher!",
@@ -425,6 +456,24 @@ export const genTimetableHandler = async (req, res) => {
       },
     });
 
+    createAuditLog({
+      action: "TIMETABLE_GENERATED",
+      actionCategory: "TIMETABLE",
+      performedBy: userId,
+      targetId: timetable._id,
+      targetModel: "Timetable",
+      previousValue: null,
+      newValue: {
+        name: timetable.name,
+        totalClasses: timetables.length,
+        generatedLessons,
+        generationDurationMs,
+      },
+      ipAddress: req.ip || req.headers["x-forwarded-for"] || null,
+      userAgent: req.headers["user-agent"] || null,
+      schoolId,
+    });
+
     return sendSucess(
       res,
       "Timetable generated and saved to the database !",
@@ -470,6 +519,12 @@ export const updateTimetable = async (req, res) => {
         JSON.stringify(updateData.config.breaks) !==
           JSON.stringify(timetable.config.breaks));
 
+    // Capture previous value before mutation
+    const previousValue = {
+      name: timetable.name,
+      config: timetable.config,
+    };
+
     Object.keys(updateData).forEach((key) => {
       timetable[key] = updateData[key];
     });
@@ -507,6 +562,23 @@ export const updateTimetable = async (req, res) => {
       },
     });
 
+    createAuditLog({
+      action: "TIMETABLE_UPDATED",
+      actionCategory: "TIMETABLE",
+      performedBy: userId,
+      targetId: timetableId,
+      targetModel: "Timetable",
+      previousValue,
+      newValue: {
+        name: timetable.name,
+        config: timetable.config,
+        configChanged: isConfigUpdate,
+      },
+      ipAddress: req.ip || req.headers["x-forwarded-for"] || null,
+      userAgent: req.headers["user-agent"] || null,
+      schoolId,
+    });
+
     return sendSucess(res, "Timetable updated successfully!", timetable, 200);
   } catch (error) {
     console.log(error);
@@ -535,6 +607,22 @@ export const deleteTable = async (req, res) => {
         entityId: deletedTimetable?._id,
         entityName: deletedTimetable?.name,
       },
+    });
+
+    createAuditLog({
+      action: "TIMETABLE_DELETED",
+      actionCategory: "TIMETABLE",
+      performedBy: userId,
+      targetId: deletedTimetable?._id,
+      targetModel: "Timetable",
+      previousValue: {
+        name: deletedTimetable?.name,
+        school: deletedTimetable?.school,
+      },
+      newValue: null,
+      ipAddress: req.ip || req.headers["x-forwarded-for"] || null,
+      userAgent: req.headers["user-agent"] || null,
+      schoolId,
     });
 
     sendSucess(res, "Deleted the timetable", deletedTimetable, 200);
@@ -567,7 +655,6 @@ export const getTimetable = async (req, res) => {
     sendSucess(res, "Here is the timetable", timetable, 200);
   } catch (error) {
     console.log(error);
-
     sendError(res, error.message);
   }
 };

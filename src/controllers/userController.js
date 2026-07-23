@@ -7,6 +7,7 @@ import {generateToken} from "../../utils/genToken.js";
 import {School} from "../database/model/school.js";
 import {sendError, sendSucess} from "../../utils/sendError.js";
 import {trackActivity} from "../../service/activityService.js";
+import {createAuditLog} from "../../service/auditService.js";
 // import { sendVerMail, senWelMail } from '../../resend/sendEmail.js';
 
 export const createTeacher = async (req, res) => {
@@ -20,7 +21,6 @@ export const createTeacher = async (req, res) => {
 
     const hashedPass = await bcrypt.hash(password, 12);
     const verToken = generateToken();
-    const alrExists = await User.findOne({email: email});
 
     //creation of the user
     const teacher = await User.create({
@@ -30,7 +30,7 @@ export const createTeacher = async (req, res) => {
       password: hashedPass,
       // school,
       verToken,
-      verTokenExpDate: Date.now() + 24 * 60 * 60 * 1000,
+      verTokenExpDate: Date.now() + 24 * 60 * 1000,
       contacts,
     });
 
@@ -45,16 +45,33 @@ export const createTeacher = async (req, res) => {
     teacher.verTokenExpDate = undefined; //date to also dissapear lol
 
     trackActivity({
-      event: "USER_LOGGED_IN",
+      event: "USER_REGISTERED",
       eventCategory: "AUTH",
-      userId: alrExists._id,
-      schoolId: alrExists.school || null,
+      userId: teacher._id,
+      schoolId: null,
       metadata: {
-        entityId: alrExists._id,
-        entityName: `${alrExists.firstName} ${alrExists.lastName}`,
-        entityEmail: alrExists.email,
-        hasSchool: !!alrExists.school,
+        entityId: teacher._id,
+        entityName: `${teacher.firstName} ${teacher.lastName}`,
+        entityEmail: teacher.email,
       },
+    });
+
+    createAuditLog({
+      action: "USER_REGISTER",
+      actionCategory: "AUTH",
+      performedBy: teacher._id,
+      targetId: teacher._id,
+      targetModel: "User",
+      previousValue: null,
+      newValue: {
+        firstName: teacher.firstName,
+        lastName: teacher.lastName,
+        email: teacher.email,
+        accountType: teacher.accountType,
+      },
+      ipAddress: req.ip || req.headers["x-forwarded-for"] || null,
+      userAgent: req.headers["user-agent"] || null,
+      schoolId: null,
     });
 
     //send response
@@ -101,10 +118,22 @@ export const login = async (req, res) => {
       },
     });
 
+    createAuditLog({
+      action: "USER_LOGIN",
+      actionCategory: "AUTH",
+      performedBy: alrExists._id,
+      targetId: alrExists._id,
+      targetModel: "User",
+      previousValue: null,
+      newValue: null,
+      ipAddress: req.ip || req.headers["x-forwarded-for"] || null,
+      userAgent: req.headers["user-agent"] || null,
+      schoolId: alrExists.school || null,
+    });
+
     return sendSucess(res, "Logged in !", alrExists, 200);
   } catch (error) {
     console.log(error);
-
     sendError(res, error.message);
   }
 };
@@ -135,7 +164,6 @@ export const veriAcc = async (req, res) => {
     isExisting.verTokenExpDate = undefined; //date to also dissapear lol
 
     //save to the db
-
     await isExisting.save();
 
     trackActivity({
@@ -148,6 +176,19 @@ export const veriAcc = async (req, res) => {
         entityName: `${isExisting.firstName} ${isExisting.lastName}`,
         entityEmail: isExisting.email,
       },
+    });
+
+    createAuditLog({
+      action: "USER_EMAIL_VERIFIED",
+      actionCategory: "AUTH",
+      performedBy: isExisting._id,
+      targetId: isExisting._id,
+      targetModel: "User",
+      previousValue: {isVerified: false},
+      newValue: {isVerified: true},
+      ipAddress: req.ip || req.headers["x-forwarded-for"] || null,
+      userAgent: req.headers["user-agent"] || null,
+      schoolId: isExisting.school || null,
     });
 
     //TODO: Send a welcome email to the user after successfull verification here
