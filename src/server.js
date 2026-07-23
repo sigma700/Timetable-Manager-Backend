@@ -9,6 +9,7 @@ import cookieParser from "cookie-parser";
 import {demoRoute} from "./routes/demoRouter.js";
 import {activityRouter} from "./routes/activityRouter.js";
 import {analyticsRouter} from "./routes/analyticsRouter.js";
+import {adminRouter} from "./routes/adminRouter.js";
 
 const app = express();
 const port = process.env.PORT;
@@ -23,7 +24,15 @@ app.use(
   }),
 );
 
-app.use("/api", router, dataRouter, demoRoute, activityRouter, analyticsRouter);
+app.use(
+  "/api",
+  router,
+  dataRouter,
+  demoRoute,
+  activityRouter,
+  analyticsRouter,
+  adminRouter,
+);
 
 connectDb();
 
