@@ -492,8 +492,8 @@ export const genTimetableHandler = async (req, res) => {
     sendError(res, error.message);
   }
 };
+//for the full timatable
 
-//here lets create a new fucntion for updating the timetable
 export const updateTimetable = async (req, res) => {
   try {
     const {timetableId} = req.params;
@@ -582,6 +582,193 @@ export const updateTimetable = async (req, res) => {
     return sendSucess(res, "Timetable updated successfully!", timetable, 200);
   } catch (error) {
     console.log(error);
+    sendError(res, error.message, 500);
+  }
+};
+
+//for a single slot :
+export const updateTimetableSlot = async (req, res) => {
+  try {
+    const {timetableId} = req.params;
+    const userId = req.userId;
+
+    const {
+      classIndex,
+      dayIndex,
+      periodIndex,
+      subject = null,
+      teacher = null,
+    } = req.body;
+
+    // ── 1. Input validation ──────────────────────────────────────────────────
+    if (
+      typeof classIndex !== "number" ||
+      typeof dayIndex !== "number" ||
+      typeof periodIndex !== "number"
+    ) {
+      return sendError(
+        res,
+        "classIndex, dayIndex, and periodIndex are required numbers",
+        400,
+      );
+    }
+
+    // ── 2. Load document — single read, used for both conflict check and write ─
+    const timetable = await GenTable.findOne({_id: timetableId}).lean();
+
+    if (!timetable) {
+      return sendError(res, "Timetable not found", 404);
+    }
+
+    const schoolId = timetable.school;
+
+    // ── 3. Bounds check — prevent writing to non-existent array positions ────
+    const targetClass = timetable.timetables?.[classIndex];
+    if (!targetClass) {
+      return sendError(res, `No classroom at index ${classIndex}`, 400);
+    }
+
+    const targetDay = targetClass.schedule?.[dayIndex];
+    if (!targetDay) {
+      return sendError(res, `No day at index ${dayIndex}`, 400);
+    }
+
+    const targetPeriod = targetDay.periods?.[periodIndex];
+    if (!targetPeriod) {
+      return sendError(res, `No period at index ${periodIndex}`, 400);
+    }
+
+    // ── 4. Conflict check — in-memory scan, zero extra DB round trips ────────
+    if (teacher?._id) {
+      const teacherId = teacher._id.toString();
+
+      const conflict = timetable.timetables.find((cls, ci) => {
+        if (ci === classIndex) return false; // skip the class being edited
+
+        const period = cls.schedule?.[dayIndex]?.periods?.[periodIndex];
+        return period?.teacher?._id?.toString() === teacherId;
+      });
+
+      if (conflict) {
+        return sendError(
+          res,
+          `${teacher.name} is already assigned to ${conflict.name} at this day and period`,
+          409,
+        );
+      }
+    }
+
+    // ── 5. Capture previous value for audit log ──────────────────────────────
+    const previousValue = {
+      subject: targetPeriod.subject ?? null,
+      teacher: targetPeriod.teacher ?? null,
+      warning: targetPeriod.warning ?? null,
+    };
+
+    // ── 6. Determine warning state ───────────────────────────────────────────
+    //  - Slot has a subject but no teacher  → warn
+    //  - Slot has a teacher                 → clear warning
+    //  - Slot has neither                   → clear warning (empty slot is fine)
+    const resolvedSubject = subject ?? null;
+    const resolvedTeacher = teacher ?? null;
+
+    const warning =
+      resolvedSubject && !resolvedTeacher
+        ? `No available teacher for ${resolvedSubject.name}`
+        : null;
+
+    // ── 7. Build targeted $set path using arrayFilters ───────────────────────
+    //
+    //  arrayFilters lets MongoDB resolve the correct nested element without
+    //  us hardcoding indices into the field path string. More readable and
+    //  avoids potential off-by-one errors.
+    //
+    //  Equivalent to:
+    //    timetables[classIndex].schedule[dayIndex].periods[periodIndex].{fields}
+    //
+    const slotPath = "timetables.$[cls].schedule.$[day].periods.$[period]";
+
+    const updatedTimetable = await GenTable.findOneAndUpdate(
+      {_id: timetableId},
+      {
+        $set: {
+          [`${slotPath}.subject`]: resolvedSubject,
+          [`${slotPath}.teacher`]: resolvedTeacher,
+          [`${slotPath}.warning`]: warning,
+        },
+      },
+      {
+        arrayFilters: [
+          {"cls.name": targetClass.name}, // match the correct classroom
+          {"day.day": targetDay.day}, // match the correct day string
+          {"period.periodNumber": targetPeriod.periodNumber}, // match the correct period
+        ],
+        new: true, // return updated document
+        runValidators: false, // nested mixed fields skip validators for speed
+      },
+    ).lean();
+
+    if (!updatedTimetable) {
+      return sendError(
+        res,
+        "Update failed — timetable not found after write",
+        500,
+      );
+    }
+
+    // ── 8. Resolve updated slot from returned document ───────────────────────
+    const updatedSlot =
+      updatedTimetable.timetables?.[classIndex]?.schedule?.[dayIndex]
+        ?.periods?.[periodIndex] ?? null;
+
+    // ── 9. Track activity (fire-and-forget) ──────────────────────────────────
+    trackActivity({
+      event: "TIMETABLE_UPDATED",
+      eventCategory: "TIMETABLE",
+      userId,
+      schoolId,
+      metadata: {
+        entityId: timetableId,
+        entityName: timetable.name,
+        classIndex,
+        dayIndex,
+        periodIndex,
+        configChanged: false,
+      },
+    });
+
+    // ── 10. Audit log (fire-and-forget) ──────────────────────────────────────
+    createAuditLog({
+      action: "TIMETABLE_UPDATED",
+      actionCategory: "TIMETABLE",
+      performedBy: userId,
+      targetId: timetableId,
+      targetModel: "Timetable",
+      previousValue,
+      newValue: {
+        subject: resolvedSubject,
+        teacher: resolvedTeacher,
+        warning,
+      },
+      ipAddress: req.ip || req.headers["x-forwarded-for"] || null,
+      userAgent: req.headers["user-agent"] || null,
+      schoolId,
+    });
+
+    return sendSucess(
+      res,
+      "Slot updated successfully",
+      {
+        slot: updatedSlot,
+        classIndex,
+        dayIndex,
+        periodIndex,
+        timetableId,
+      },
+      200,
+    );
+  } catch (error) {
+    console.error("[updateTimetableSlot]", error);
     sendError(res, error.message, 500);
   }
 };
