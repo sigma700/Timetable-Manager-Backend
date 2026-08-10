@@ -240,12 +240,12 @@ export const logout = async (req, res) => {
       }
     }
 
-    // Clear the JWT cookie
+    // In your logout controller
     res.cookie("token", "", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      expires: new Date(0), // Set to past date to expire immediately
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+      expires: new Date(0),
       path: "/",
     });
 
