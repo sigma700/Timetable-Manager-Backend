@@ -200,3 +200,58 @@ export const veriAcc = async (req, res) => {
     sendError(res, error.message);
   }
 };
+//algorithm for logout functionality
+export const logout = async (req, res) => {
+  try {
+    const userId = req.userId; // Your middleware attaches userId, not user object
+
+    // Track the logout activity if we have user info
+    if (userId) {
+      // Optional: fetch user details for better activity tracking
+      const user = await User.findById(userId).select(
+        "firstName lastName email school",
+      );
+
+      if (user) {
+        trackActivity({
+          event: "USER_LOGGED_OUT",
+          eventCategory: "AUTH",
+          userId: userId,
+          schoolId: user.school || null,
+          metadata: {
+            entityId: userId,
+            entityName: `${user.firstName || ""} ${user.lastName || ""}`.trim(),
+            entityEmail: user.email || "",
+          },
+        });
+
+        createAuditLog({
+          action: "USER_LOGOUT",
+          actionCategory: "AUTH",
+          performedBy: userId,
+          targetId: userId,
+          targetModel: "User",
+          previousValue: null,
+          newValue: null,
+          ipAddress: req.ip || req.headers["x-forwarded-for"] || null,
+          userAgent: req.headers["user-agent"] || null,
+          schoolId: user.school || null,
+        });
+      }
+    }
+
+    // Clear the JWT cookie
+    res.cookie("token", "", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      expires: new Date(0), // Set to past date to expire immediately
+      path: "/",
+    });
+
+    return sendSucess(res, "Logged out successfully", null, 200);
+  } catch (error) {
+    console.error("Logout error:", error);
+    return sendError(res, "An error occurred during logout");
+  }
+};
