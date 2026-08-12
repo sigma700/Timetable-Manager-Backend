@@ -12,20 +12,75 @@ import {User} from "../database/model/users.js";
 import {sendIdMail} from "../../resend/sendEmail.js";
 import {trackActivity} from "../../service/activityService.js";
 import {createAuditLog} from "../../service/auditService.js";
+import calculateTime from "../../utils/calculateTime.js";
 import mongoose from "mongoose";
+
+function fireAndForget(promise, context) {
+  Promise.resolve(promise).catch((err) => {
+    console.error(`[fire-and-forget:${context}]`, err);
+  });
+}
+
+async function getUserSchoolId(userId) {
+  const user = await User.findById(userId).populate("school");
+  if (!user) {
+    throw Object.assign(new Error("User not found"), {statusCode: 404});
+  }
+  if (!user.school) {
+    throw Object.assign(new Error("User is not associated with any school"), {
+      statusCode: 400,
+    });
+  }
+  return user.school._id;
+}
+
+function sendCaughtError(res, error, fallbackMessage = "Something went wrong") {
+  sendError(res, error?.message || fallbackMessage, error?.statusCode || 500);
+}
+
+function escapeRegExp(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function calculatePeriodTimes(schedule, config = {}) {
+  const startTime = config.startTime ?? "08:00";
+  const periodDuration = config.periodDuration ?? 45;
+
+  return schedule.map((day) => ({
+    ...day,
+    periods: day.periods.map((period) => {
+      if (!period || period.isBreak || period.periodNumber == null) {
+        return period;
+      }
+      const slot = period.periodNumber - 1;
+      const mult = period.isDoublePeriod ? 2 : 1;
+      return {
+        ...period,
+        startTime: calculateTime(startTime, slot * periodDuration),
+        endTime: calculateTime(startTime, (slot + mult) * periodDuration),
+      };
+    }),
+  }));
+}
+
+const MAX_LEVEL_RANGE = 50;
+const MAX_LABELS = 20;
+
+const UPDATABLE_TIMETABLE_FIELDS = new Set(["name", "config", "timetables"]);
+
+// ── Handlers ─────────────────────────────────────────────────────────────────
 
 export const listSchool = async (req, res) => {
   try {
     const {name} = req.body;
-
     const userId = req.userId;
 
-    console.log(userId);
+    if (!name || typeof name !== "string" || !name.trim()) {
+      return sendError(res, "School name is required", 400);
+    }
 
-    // Create the school
-    const createdSchool = await School.create({name});
+    const createdSchool = await School.create({name: name.trim()});
 
-    // If userId is provided, associate the school with that user
     if (userId) {
       await User.findByIdAndUpdate(
         userId,
@@ -38,63 +93,50 @@ export const listSchool = async (req, res) => {
 
     await sendIdMail(schoolId);
 
-    trackActivity({
-      event: "SCHOOL_CREATED",
-      eventCategory: "INSTITUTION",
-      userId,
-      schoolId,
-      metadata: {
-        entityId: createdSchool._id,
-        entityName: createdSchool.name,
-      },
-    });
+    fireAndForget(
+      trackActivity({
+        event: "SCHOOL_CREATED",
+        eventCategory: "INSTITUTION",
+        userId,
+        schoolId,
+        metadata: {
+          entityId: createdSchool._id,
+          entityName: createdSchool.name,
+        },
+      }),
+      "trackActivity:SCHOOL_CREATED",
+    );
 
-    createAuditLog({
-      action: "SCHOOL_CREATED",
-      actionCategory: "INSTITUTION",
-      performedBy: userId,
-      targetId: createdSchool._id,
-      targetModel: "School",
-      previousValue: null,
-      newValue: {name: createdSchool.name},
-      ipAddress: req.ip || req.headers["x-forwarded-for"] || null,
-      userAgent: req.headers["user-agent"] || null,
-      schoolId,
-    });
+    fireAndForget(
+      createAuditLog({
+        action: "SCHOOL_CREATED",
+        actionCategory: "INSTITUTION",
+        performedBy: userId,
+        targetId: createdSchool._id,
+        targetModel: "School",
+        previousValue: null,
+        newValue: {name: createdSchool.name},
+        ipAddress: req.ip || req.headers["x-forwarded-for"] || null,
+        userAgent: req.headers["user-agent"] || null,
+        schoolId,
+      }),
+      "createAuditLog:SCHOOL_CREATED",
+    );
 
     return sendSucess(res, "School created successfully!", {
       school: createdSchool,
       userId: userId || null,
     });
   } catch (error) {
-    sendError(res, error.message);
+    sendCaughtError(res, error);
   }
 };
 
 export const listSubjects = async (req, res) => {
   try {
-    const userId = req.userId; // From authentication middleware
-
-    // Get user with school populated
-    const user = await User.findById(userId).populate("school");
-
-    if (!user || !user.school) {
-      return sendError(res, "User is not associated with any school", 400);
-    }
-
-    const schoolId = user.school._id;
+    const userId = req.userId;
+    const schoolId = await getUserSchoolId(userId);
     const {names} = req.body;
-
-    console.log("SchoolId from user object:", schoolId);
-
-    // Add ObjectId validation
-    if (
-      !schoolId ||
-      schoolId === "undefined" ||
-      !mongoose.Types.ObjectId.isValid(schoolId)
-    ) {
-      return sendError(res, "Invalid or missing school ID", 400);
-    }
 
     if (!Array.isArray(names) || names.length === 0) {
       return sendError(res, "Missing or invalid subject data", 400);
@@ -115,16 +157,19 @@ export const listSubjects = async (req, res) => {
 
     const createdSubjects = await Subject.insertMany(newSubjects);
 
-    trackActivity({
-      event: "SUBJECT_CREATED",
-      eventCategory: "SUBJECT",
-      userId,
-      schoolId,
-      metadata: {
-        subjectCount: createdSubjects.length,
-        entityNames: createdSubjects.map((s) => s.name),
-      },
-    });
+    fireAndForget(
+      trackActivity({
+        event: "SUBJECT_CREATED",
+        eventCategory: "SUBJECT",
+        userId,
+        schoolId,
+        metadata: {
+          subjectCount: createdSubjects.length,
+          entityNames: createdSubjects.map((s) => s.name),
+        },
+      }),
+      "trackActivity:SUBJECT_CREATED",
+    );
 
     return sendSucess(
       res,
@@ -135,40 +180,19 @@ export const listSubjects = async (req, res) => {
   } catch (error) {
     console.error(error.message);
 
-    // Handle duplicate key errors kawabangaa mate
     if (error.code === 11000) {
       return sendError(res, "Some subjects already exist in this school", 400);
     }
 
-    sendError(res, error.message);
+    sendCaughtError(res, error);
   }
 };
 
-//this is my code do not dare and steal it because i will sue you as a thief of mental property
 export const listClassData = async (req, res) => {
   try {
-    const userId = req.userId; // From authentication middleware
-
-    // Get user with school populated
-    const user = await User.findById(userId).populate("school");
-
-    if (!user || !user.school) {
-      return sendError(res, "User is not associated with any school", 400);
-    }
-
-    const schoolId = user.school._id; // Get schoolId from user object
+    const userId = req.userId;
+    const schoolId = await getUserSchoolId(userId);
     const {type, minLevel, maxLevel, labels} = req.body;
-
-    console.log("SchoolId from user object:", schoolId);
-
-    // Validation
-    if (
-      !schoolId ||
-      schoolId === "undefined" ||
-      !mongoose.Types.ObjectId.isValid(schoolId)
-    ) {
-      return sendError(res, "Invalid or missing school ID", 400);
-    }
 
     if (
       !type ||
@@ -179,7 +203,6 @@ export const listClassData = async (req, res) => {
       return sendError(res, "Missing required fields", 400);
     }
 
-    // Check if type is valid
     const validTypes = ["Class", "Grade", "Form"];
     if (!validTypes.includes(type)) {
       return sendError(
@@ -196,9 +219,19 @@ export const listClassData = async (req, res) => {
       return sendError(res, "Invalid level range", 400);
     }
 
+    if (max - min > MAX_LEVEL_RANGE) {
+      return sendError(
+        res,
+        `Level range too large — max ${MAX_LEVEL_RANGE} levels per request`,
+        400,
+      );
+    }
+    if (labels.length > MAX_LABELS) {
+      return sendError(res, `Too many labels — max ${MAX_LABELS}`, 400);
+    }
+
     const schoolObjectId = new mongoose.Types.ObjectId(schoolId);
 
-    // Get all subjects taught in the school
     const allSubjects = await Subject.find({school: schoolObjectId});
     const subjectIds = allSubjects.map((subject) => subject._id);
 
@@ -210,7 +243,7 @@ export const listClassData = async (req, res) => {
           type: type.trim(),
           level,
           label,
-          school: schoolObjectId, // Use ObjectId
+          school: schoolObjectId,
           isOccupied: false,
           subjects: subjectIds,
         });
@@ -219,18 +252,21 @@ export const listClassData = async (req, res) => {
 
     const createdClasses = await ClassData.insertMany(classes);
 
-    trackActivity({
-      event: "CLASS_CREATED",
-      eventCategory: "CLASS",
-      userId,
-      schoolId,
-      metadata: {
-        entityName: type,
-        classCount: createdClasses.length,
-        levelRange: {min, max},
-        labels,
-      },
-    });
+    fireAndForget(
+      trackActivity({
+        event: "CLASS_CREATED",
+        eventCategory: "CLASS",
+        userId,
+        schoolId,
+        metadata: {
+          entityName: type,
+          classCount: createdClasses.length,
+          levelRange: {min, max},
+          labels,
+        },
+      }),
+      "trackActivity:CLASS_CREATED",
+    );
 
     return sendSucess(
       res,
@@ -243,35 +279,20 @@ export const listClassData = async (req, res) => {
     if (error.code === 11000) {
       return sendError(res, "Some of these classes already exist", 400);
     }
-    sendError(res, error.message);
+    sendCaughtError(res, error);
   }
 };
 
 export const listTeachers = async (req, res) => {
   try {
     const userId = req.userId;
-
-    const user = await User.findById(userId).populate("school");
-
-    if (!user || !user.school) {
-      return sendError(res, "User is not associated with any school", 400);
-    }
-
-    const schoolId = user.school._id; // Get schoolId from user object
+    const schoolId = await getUserSchoolId(userId);
     const {name, subjects, classesNames} = req.body;
-
-    console.log("SchoolId from user object:", schoolId);
-
-    if (
-      !schoolId ||
-      schoolId === "undefined" ||
-      !mongoose.Types.ObjectId.isValid(schoolId)
-    ) {
-      return sendError(res, "Invalid or missing school ID", 400);
-    }
 
     if (
       !name ||
+      typeof name !== "string" ||
+      !name.trim() ||
       !Array.isArray(subjects) ||
       subjects.length === 0 ||
       !Array.isArray(classesNames)
@@ -280,10 +301,10 @@ export const listTeachers = async (req, res) => {
     }
 
     const schoolObjectId = new mongoose.Types.ObjectId(schoolId);
+    const trimmedName = name.trim();
 
-    // Check if teacher already exists - use ObjectId
     const existing = await ListOfTechers.findOne({
-      name,
+      name: {$regex: new RegExp(`^${escapeRegExp(trimmedName)}$`, "i")},
       school: schoolObjectId,
     });
 
@@ -291,15 +312,25 @@ export const listTeachers = async (req, res) => {
       return sendError(res, "Teacher already exists in this school!", 400);
     }
 
-    // Use ObjectId for all queries
     const subjNames = await Subject.find({
       name: {$in: subjects},
       school: schoolObjectId,
     });
 
+    if (subjNames.length !== subjects.length) {
+      const foundSubjectNames = subjNames.map((s) => s.name);
+      const missingSubjects = subjects.filter(
+        (n) => !foundSubjectNames.includes(n),
+      );
+      return sendError(
+        res,
+        `These subjects don't exist: ${missingSubjects.join(", ")}`,
+        400,
+      );
+    }
+
     const subjIds = subjNames.map((s) => s._id);
 
-    // Find all class IDs for the provided class names
     const classes = await ClassData.find({
       name: {$in: classesNames},
       school: schoolObjectId,
@@ -319,43 +350,48 @@ export const listTeachers = async (req, res) => {
 
     const classIds = classes.map((c) => c._id);
 
-    // Create teacher with class IDs
     const createdTeacher = await ListOfTechers.create({
-      name: name.trim(),
+      name: trimmedName,
       classes: classIds,
-      school: schoolObjectId, // Use ObjectId here too
+      school: schoolObjectId,
       subjects: subjIds,
     });
 
-    trackActivity({
-      event: "TEACHER_CREATED",
-      eventCategory: "TEACHER",
-      userId,
-      schoolId,
-      metadata: {
-        entityId: createdTeacher._id,
-        entityName: createdTeacher.name,
-        subjectCount: subjIds.length,
-        classCount: classIds.length,
-      },
-    });
+    fireAndForget(
+      trackActivity({
+        event: "TEACHER_CREATED",
+        eventCategory: "TEACHER",
+        userId,
+        schoolId,
+        metadata: {
+          entityId: createdTeacher._id,
+          entityName: createdTeacher.name,
+          subjectCount: subjIds.length,
+          classCount: classIds.length,
+        },
+      }),
+      "trackActivity:TEACHER_CREATED",
+    );
 
-    createAuditLog({
-      action: "TEACHER_CREATED",
-      actionCategory: "TEACHER",
-      performedBy: userId,
-      targetId: createdTeacher._id,
-      targetModel: "Teacher",
-      previousValue: null,
-      newValue: {
-        name: createdTeacher.name,
-        subjectCount: subjIds.length,
-        classCount: classIds.length,
-      },
-      ipAddress: req.ip || req.headers["x-forwarded-for"] || null,
-      userAgent: req.headers["user-agent"] || null,
-      schoolId,
-    });
+    fireAndForget(
+      createAuditLog({
+        action: "TEACHER_CREATED",
+        actionCategory: "TEACHER",
+        performedBy: userId,
+        targetId: createdTeacher._id,
+        targetModel: "Teacher",
+        previousValue: null,
+        newValue: {
+          name: createdTeacher.name,
+          subjectCount: subjIds.length,
+          classCount: classIds.length,
+        },
+        ipAddress: req.ip || req.headers["x-forwarded-for"] || null,
+        userAgent: req.headers["user-agent"] || null,
+        schoolId,
+      }),
+      "createAuditLog:TEACHER_CREATED",
+    );
 
     return sendSucess(
       res,
@@ -368,166 +404,162 @@ export const listTeachers = async (req, res) => {
     if (error.code === 11000) {
       return sendError(res, "Teacher with this name already exists", 400);
     }
-    sendError(res, error.message);
+    sendCaughtError(res, error);
   }
 };
 
-//done
-
 export const genTimetableHandler = async (req, res) => {
   try {
-    // const { schoolId } = req.params;
-
-    //lets send the timetable id to the users email
-
     const {name, config} = req.body;
     const userId = req.userId;
-    const generationStartTime = Date.now(); // Capture start time for duration tracking
+    const generationStartTime = Date.now();
 
     if (!name) {
-      return sendError(res, "Name value is required !");
+      return sendError(res, "Name value is required!", 400);
     }
-
     if (!userId) {
-      return sendError(res, "User  not authenticated !", 401);
+      return sendError(res, "User not authenticated!", 401);
     }
 
-    const user = await User.findById(userId).populate("school");
+    const schoolId = await getUserSchoolId(userId);
 
-    const schoolId = user.school._id; //problem is over here !
+    const safeConfig = config && typeof config === "object" ? config : {};
 
-    await sendIdMail(schoolId);
-    //check if the user is associated with any school at first !
-    if (!schoolId) {
-      return sendError(res, "User is not associated with any school!", 400);
-    }
+    const timetables = await generateSimpleTimetable(schoolId, safeConfig);
 
-    // Generate timetable data
-    const timetables = await generateSimpleTimetable(schoolId, config);
-
-    // Create the timetable document
     const timetable = await GenTable.create({
-      name: name,
+      name,
       school: schoolId,
       timetables,
-      config,
+      config: safeConfig,
       constraints: {},
       createdBy: userId,
     });
 
-    // Update the creator (admin/teacher who generated the timetable)
     await User.findByIdAndUpdate(
       userId,
       {$push: {timetables: timetable._id}},
       {new: true},
     );
 
-    // Compute analytics metadata for timetable generation event
     const generationDurationMs = Date.now() - generationStartTime;
     const generatedLessons = timetables.reduce((total, t) => {
       return (
         total +
         t.schedule.reduce((dayTotal, day) => {
-          return dayTotal + day.periods.filter((p) => !p.isBreak).length;
+          return dayTotal + day.periods.filter((p) => !p?.isBreak).length;
         }, 0)
       );
     }, 0);
 
-    // Fetch school-wide counts for analytics context
     const [totalTeachers, totalSubjects] = await Promise.all([
       ListOfTechers.countDocuments({school: schoolId}),
       Subject.countDocuments({school: schoolId}),
     ]);
 
-    trackActivity({
-      event: "TIMETABLE_GENERATED",
-      eventCategory: "TIMETABLE",
-      userId,
-      schoolId,
-      metadata: {
-        entityId: timetable._id,
-        entityName: timetable.name,
-        totalClasses: timetables.length,
-        totalTeachers,
-        totalSubjects,
-        generatedLessons,
-        periodsPerDay: config?.periodsPerDay,
-        generationDurationMs,
-      },
-    });
+    fireAndForget(
+      trackActivity({
+        event: "TIMETABLE_GENERATED",
+        eventCategory: "TIMETABLE",
+        userId,
+        schoolId,
+        metadata: {
+          entityId: timetable._id,
+          entityName: timetable.name,
+          totalClasses: timetables.length,
+          totalTeachers,
+          totalSubjects,
+          generatedLessons,
+          periodsPerDay: safeConfig?.periodsPerDay,
+          generationDurationMs,
+        },
+      }),
+      "trackActivity:TIMETABLE_GENERATED",
+    );
 
-    createAuditLog({
-      action: "TIMETABLE_GENERATED",
-      actionCategory: "TIMETABLE",
-      performedBy: userId,
-      targetId: timetable._id,
-      targetModel: "Timetable",
-      previousValue: null,
-      newValue: {
-        name: timetable.name,
-        totalClasses: timetables.length,
-        generatedLessons,
-        generationDurationMs,
-      },
-      ipAddress: req.ip || req.headers["x-forwarded-for"] || null,
-      userAgent: req.headers["user-agent"] || null,
-      schoolId,
-    });
+    fireAndForget(
+      createAuditLog({
+        action: "TIMETABLE_GENERATED",
+        actionCategory: "TIMETABLE",
+        performedBy: userId,
+        targetId: timetable._id,
+        targetModel: "Timetable",
+        previousValue: null,
+        newValue: {
+          name: timetable.name,
+          totalClasses: timetables.length,
+          generatedLessons,
+          generationDurationMs,
+        },
+        ipAddress: req.ip || req.headers["x-forwarded-for"] || null,
+        userAgent: req.headers["user-agent"] || null,
+        schoolId,
+      }),
+      "createAuditLog:TIMETABLE_GENERATED",
+    );
 
     return sendSucess(
       res,
-      "Timetable generated and saved to the database !",
+      "Timetable generated and saved to the database!",
       timetable,
       201,
     );
   } catch (error) {
     console.error("Timetable generation error:", error);
-    res.status(500).json({
+    // The original sent a response here AND then called sendError()
+    // below with the same error — a guaranteed "Cannot set headers
+    // after they are sent" crash on every single failure path. Only one
+    // response is sent now.
+    return res.status(error.statusCode || 500).json({
       success: false,
       message: error.message,
       errorDetails:
         process.env.NODE_ENV === "development" ? error.stack : undefined,
     });
-
-    sendError(res, error.message);
   }
 };
-//for the full timatable
 
 export const updateTimetable = async (req, res) => {
   try {
     const {timetableId} = req.params;
-    const userId = req.userId; // Extracted for activity tracking
+    const userId = req.userId;
     const updateData = req.body;
 
     if (!timetableId || !updateData || typeof updateData !== "object") {
       return sendError(res, "Missing timetable ID or update data", 400);
     }
 
-    const timetable = await GenTable.findOneAndUpdate({_id: timetableId});
+    const schoolId = await getUserSchoolId(userId);
+
+    const timetable = await GenTable.findOne({
+      _id: timetableId,
+      school: schoolId,
+    });
     if (!timetable) {
-      return sendError(res, "Timetable not found", 404);
+      return sendError(
+        res,
+        "Timetable not found or you do not have access to it",
+        404,
+      );
     }
 
-    const schoolId = timetable.school; // Sourced from document — not available on req
-
-    //to check if the config had changed
     const isConfigUpdate =
       updateData.config &&
-      (updateData.config.periodDuration !== timetable.config.periodDuration ||
-        updateData.config.startTime !== timetable.config.startTime ||
+      (updateData.config.periodDuration !== timetable.config?.periodDuration ||
+        updateData.config.startTime !== timetable.config?.startTime ||
         JSON.stringify(updateData.config.breaks) !==
-          JSON.stringify(timetable.config.breaks));
+          JSON.stringify(timetable.config?.breaks));
 
-    // Capture previous value before mutation
     const previousValue = {
       name: timetable.name,
       config: timetable.config,
     };
 
-    Object.keys(updateData).forEach((key) => {
-      timetable[key] = updateData[key];
-    });
+    for (const key of Object.keys(updateData)) {
+      if (UPDATABLE_TIMETABLE_FIELDS.has(key)) {
+        timetable[key] = updateData[key];
+      }
+    }
 
     if (updateData.updateNestedConfigs && updateData.config) {
       timetable.timetables.forEach((nestedTimetable) => {
@@ -538,7 +570,6 @@ export const updateTimetable = async (req, res) => {
       });
     }
 
-    // Recalculate times if config changed
     if (isConfigUpdate) {
       timetable.timetables.forEach((nestedTimetable) => {
         nestedTimetable.schedule = calculatePeriodTimes(
@@ -550,43 +581,48 @@ export const updateTimetable = async (req, res) => {
 
     await timetable.save();
 
-    trackActivity({
-      event: "TIMETABLE_UPDATED",
-      eventCategory: "TIMETABLE",
-      userId,
-      schoolId,
-      metadata: {
-        entityId: timetableId,
-        entityName: timetable.name,
-        configChanged: isConfigUpdate,
-      },
-    });
+    fireAndForget(
+      trackActivity({
+        event: "TIMETABLE_UPDATED",
+        eventCategory: "TIMETABLE",
+        userId,
+        schoolId,
+        metadata: {
+          entityId: timetableId,
+          entityName: timetable.name,
+          configChanged: isConfigUpdate,
+        },
+      }),
+      "trackActivity:TIMETABLE_UPDATED",
+    );
 
-    createAuditLog({
-      action: "TIMETABLE_UPDATED",
-      actionCategory: "TIMETABLE",
-      performedBy: userId,
-      targetId: timetableId,
-      targetModel: "Timetable",
-      previousValue,
-      newValue: {
-        name: timetable.name,
-        config: timetable.config,
-        configChanged: isConfigUpdate,
-      },
-      ipAddress: req.ip || req.headers["x-forwarded-for"] || null,
-      userAgent: req.headers["user-agent"] || null,
-      schoolId,
-    });
+    fireAndForget(
+      createAuditLog({
+        action: "TIMETABLE_UPDATED",
+        actionCategory: "TIMETABLE",
+        performedBy: userId,
+        targetId: timetableId,
+        targetModel: "Timetable",
+        previousValue,
+        newValue: {
+          name: timetable.name,
+          config: timetable.config,
+          configChanged: isConfigUpdate,
+        },
+        ipAddress: req.ip || req.headers["x-forwarded-for"] || null,
+        userAgent: req.headers["user-agent"] || null,
+        schoolId,
+      }),
+      "createAuditLog:TIMETABLE_UPDATED",
+    );
 
     return sendSucess(res, "Timetable updated successfully!", timetable, 200);
   } catch (error) {
-    console.log(error);
-    sendError(res, error.message, 500);
+    console.error(error);
+    sendCaughtError(res, error);
   }
 };
 
-//for a single slot :
 export const updateTimetableSlot = async (req, res) => {
   try {
     const {timetableId} = req.params;
@@ -600,7 +636,6 @@ export const updateTimetableSlot = async (req, res) => {
       teacher = null,
     } = req.body;
 
-    // ── 1. Input validation ──────────────────────────────────────────────────
     if (
       typeof classIndex !== "number" ||
       typeof dayIndex !== "number" ||
@@ -613,16 +648,23 @@ export const updateTimetableSlot = async (req, res) => {
       );
     }
 
-    // ── 2. Load document — single read, used for both conflict check and write ─
-    const timetable = await GenTable.findOne({_id: timetableId}).lean();
+    const schoolId = await getUserSchoolId(userId);
+
+    // Ownership enforced in the query — a timetable from another school
+    // 404s instead of being editable by anyone who knows/guesses its ID.
+    const timetable = await GenTable.findOne({
+      _id: timetableId,
+      school: schoolId,
+    }).lean();
 
     if (!timetable) {
-      return sendError(res, "Timetable not found", 404);
+      return sendError(
+        res,
+        "Timetable not found or you do not have access to it",
+        404,
+      );
     }
 
-    const schoolId = timetable.school;
-
-    // ── 3. Bounds check — prevent writing to non-existent array positions ────
     const targetClass = timetable.timetables?.[classIndex];
     if (!targetClass) {
       return sendError(res, `No classroom at index ${classIndex}`, 400);
@@ -638,12 +680,11 @@ export const updateTimetableSlot = async (req, res) => {
       return sendError(res, `No period at index ${periodIndex}`, 400);
     }
 
-    // ── 4. Conflict check — in-memory scan, zero extra DB round trips ────────
     if (teacher?._id) {
       const teacherId = teacher._id.toString();
 
       const conflict = timetable.timetables.find((cls, ci) => {
-        if (ci === classIndex) return false; // skip the class being edited
+        if (ci === classIndex) return false;
 
         const period = cls.schedule?.[dayIndex]?.periods?.[periodIndex];
         return period?.teacher?._id?.toString() === teacherId;
@@ -658,17 +699,12 @@ export const updateTimetableSlot = async (req, res) => {
       }
     }
 
-    // ── 5. Capture previous value for audit log ──────────────────────────────
     const previousValue = {
       subject: targetPeriod.subject ?? null,
       teacher: targetPeriod.teacher ?? null,
       warning: targetPeriod.warning ?? null,
     };
 
-    // ── 6. Determine warning state ───────────────────────────────────────────
-    //  - Slot has a subject but no teacher  → warn
-    //  - Slot has a teacher                 → clear warning
-    //  - Slot has neither                   → clear warning (empty slot is fine)
     const resolvedSubject = subject ?? null;
     const resolvedTeacher = teacher ?? null;
 
@@ -677,19 +713,10 @@ export const updateTimetableSlot = async (req, res) => {
         ? `No available teacher for ${resolvedSubject.name}`
         : null;
 
-    // ── 7. Build targeted $set path using arrayFilters ───────────────────────
-    //
-    //  arrayFilters lets MongoDB resolve the correct nested element without
-    //  us hardcoding indices into the field path string. More readable and
-    //  avoids potential off-by-one errors.
-    //
-    //  Equivalent to:
-    //    timetables[classIndex].schedule[dayIndex].periods[periodIndex].{fields}
-    //
     const slotPath = "timetables.$[cls].schedule.$[day].periods.$[period]";
 
     const updatedTimetable = await GenTable.findOneAndUpdate(
-      {_id: timetableId},
+      {_id: timetableId, school: schoolId},
       {
         $set: {
           [`${slotPath}.subject`]: resolvedSubject,
@@ -699,12 +726,12 @@ export const updateTimetableSlot = async (req, res) => {
       },
       {
         arrayFilters: [
-          {"cls.name": targetClass.name}, // match the correct classroom
-          {"day.day": targetDay.day}, // match the correct day string
-          {"period.periodNumber": targetPeriod.periodNumber}, // match the correct period
+          {"cls.name": targetClass.name},
+          {"day.day": targetDay.day},
+          {"period.periodNumber": targetPeriod.periodNumber},
         ],
-        new: true, // return updated document
-        runValidators: false, // nested mixed fields skip validators for speed
+        new: true,
+        runValidators: false,
       },
     ).lean();
 
@@ -716,44 +743,47 @@ export const updateTimetableSlot = async (req, res) => {
       );
     }
 
-    // ── 8. Resolve updated slot from returned document ───────────────────────
     const updatedSlot =
       updatedTimetable.timetables?.[classIndex]?.schedule?.[dayIndex]
         ?.periods?.[periodIndex] ?? null;
 
-    // ── 9. Track activity (fire-and-forget) ──────────────────────────────────
-    trackActivity({
-      event: "TIMETABLE_UPDATED",
-      eventCategory: "TIMETABLE",
-      userId,
-      schoolId,
-      metadata: {
-        entityId: timetableId,
-        entityName: timetable.name,
-        classIndex,
-        dayIndex,
-        periodIndex,
-        configChanged: false,
-      },
-    });
+    fireAndForget(
+      trackActivity({
+        event: "TIMETABLE_UPDATED",
+        eventCategory: "TIMETABLE",
+        userId,
+        schoolId,
+        metadata: {
+          entityId: timetableId,
+          entityName: timetable.name,
+          classIndex,
+          dayIndex,
+          periodIndex,
+          configChanged: false,
+        },
+      }),
+      "trackActivity:TIMETABLE_SLOT_UPDATED",
+    );
 
-    // ── 10. Audit log (fire-and-forget) ──────────────────────────────────────
-    createAuditLog({
-      action: "TIMETABLE_UPDATED",
-      actionCategory: "TIMETABLE",
-      performedBy: userId,
-      targetId: timetableId,
-      targetModel: "Timetable",
-      previousValue,
-      newValue: {
-        subject: resolvedSubject,
-        teacher: resolvedTeacher,
-        warning,
-      },
-      ipAddress: req.ip || req.headers["x-forwarded-for"] || null,
-      userAgent: req.headers["user-agent"] || null,
-      schoolId,
-    });
+    fireAndForget(
+      createAuditLog({
+        action: "TIMETABLE_UPDATED",
+        actionCategory: "TIMETABLE",
+        performedBy: userId,
+        targetId: timetableId,
+        targetModel: "Timetable",
+        previousValue,
+        newValue: {
+          subject: resolvedSubject,
+          teacher: resolvedTeacher,
+          warning,
+        },
+        ipAddress: req.ip || req.headers["x-forwarded-for"] || null,
+        userAgent: req.headers["user-agent"] || null,
+        schoolId,
+      }),
+      "createAuditLog:TIMETABLE_SLOT_UPDATED",
+    );
 
     return sendSucess(
       res,
@@ -769,79 +799,86 @@ export const updateTimetableSlot = async (req, res) => {
     );
   } catch (error) {
     console.error("[updateTimetableSlot]", error);
-    sendError(res, error.message, 500);
+    sendCaughtError(res, error);
   }
 };
 
-//if the timetable is not what was expected then i want the user to be able to delete it
 export const deleteTable = async (req, res) => {
   try {
     const {timetableId} = req.params;
-    const userId = req.userId; // Extracted for activity tracking
+    const userId = req.userId;
+
+    const schoolId = await getUserSchoolId(userId);
 
     const deletedTimetable = await GenTable.findOneAndDelete({
       _id: timetableId,
+      school: schoolId,
     });
 
-    const schoolId = deletedTimetable?.school || null; // Sourced from document — not available on req
+    if (!deletedTimetable) {
+      return sendError(
+        res,
+        "Timetable not found or you do not have access to it",
+        404,
+      );
+    }
 
-    trackActivity({
-      event: "TIMETABLE_DELETED",
-      eventCategory: "TIMETABLE",
-      userId,
-      schoolId,
-      metadata: {
-        entityId: deletedTimetable?._id,
-        entityName: deletedTimetable?.name,
-      },
-    });
+    fireAndForget(
+      trackActivity({
+        event: "TIMETABLE_DELETED",
+        eventCategory: "TIMETABLE",
+        userId,
+        schoolId,
+        metadata: {
+          entityId: deletedTimetable._id,
+          entityName: deletedTimetable.name,
+        },
+      }),
+      "trackActivity:TIMETABLE_DELETED",
+    );
 
-    createAuditLog({
-      action: "TIMETABLE_DELETED",
-      actionCategory: "TIMETABLE",
-      performedBy: userId,
-      targetId: deletedTimetable?._id,
-      targetModel: "Timetable",
-      previousValue: {
-        name: deletedTimetable?.name,
-        school: deletedTimetable?.school,
-      },
-      newValue: null,
-      ipAddress: req.ip || req.headers["x-forwarded-for"] || null,
-      userAgent: req.headers["user-agent"] || null,
-      schoolId,
-    });
+    fireAndForget(
+      createAuditLog({
+        action: "TIMETABLE_DELETED",
+        actionCategory: "TIMETABLE",
+        performedBy: userId,
+        targetId: deletedTimetable._id,
+        targetModel: "Timetable",
+        previousValue: {
+          name: deletedTimetable.name,
+          school: deletedTimetable.school,
+        },
+        newValue: null,
+        ipAddress: req.ip || req.headers["x-forwarded-for"] || null,
+        userAgent: req.headers["user-agent"] || null,
+        schoolId,
+      }),
+      "createAuditLog:TIMETABLE_DELETED",
+    );
 
-    sendSucess(res, "Deleted the timetable", deletedTimetable, 200);
+    return sendSucess(res, "Deleted the timetable", deletedTimetable, 200);
   } catch (error) {
-    sendError(res, error.message, 500);
+    sendCaughtError(res, error);
   }
 };
 
-//now for getting the timetable after it has been generated !
-//to make sure that the timetable that is being shown is for the user that is already verified and has an account
 export const getTimetable = async (req, res) => {
   const {timetableId} = req.params;
   try {
-    const user = await User.findById(req.userId);
-    if (!user) {
-      return sendError(res, "User not found", 404);
-    }
+    const schoolId = await getUserSchoolId(req.userId);
+
     const timetable = await GenTable.findOne({
       _id: timetableId,
-      // $or: [
-      // 	{ createdBy: req.userId }, // Owner check
-      // 	{ school: user.school }, // School-wide access
-      // ],
+      $or: [{createdBy: req.userId}, {school: schoolId}],
     });
 
     if (!timetable) {
-      return sendError(res, "No timetables found !", 404);
+      return sendError(res, "No timetables found!", 404);
     }
 
-    sendSucess(res, "Here is the timetable", timetable, 200);
+    return sendSucess(res, "Here is the timetable", timetable, 200);
   } catch (error) {
-    console.log(error);
-    sendError(res, error.message);
+    console.error(error);
+    sendCaughtError(res, error);
   }
 };

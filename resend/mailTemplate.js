@@ -264,25 +264,38 @@ export const verifMailPlate = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Tran
 </html>
 `;
 
-export const schoolIdPLate = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+// Previously exported as a static string (`schoolIdPLate`) containing AWS's
+// demo-template branding (their logo, their trademark footer, their address)
+// and using `{schoolId}` inside a JS template literal — single braces are not
+// valid interpolation syntax, so the email would have rendered the literal
+// text "{schoolId}" instead of the actual ID.
+//
+// Rewritten as a function so the ID is safely interpolated with `${...}`,
+// and every AWS reference has been removed and replaced with copy specific
+// to Timetable. Update the call site (sendIdMail) from:
+//   html: schoolIdPLate
+// to:
+//   html: schoolIdPLate(schoolId)
+
+const ACCENT = "#4F46E5"; // indigo — swap for your actual brand color
+const ACCENT_DARK = "#3730A3";
+const FONT_STACK =
+  "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif";
+
+export const schoolIdPLate = (
+  schoolId,
+) => `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html dir="ltr" lang="en">
   <head>
-    <link
-      rel="preload"
-      as="image"
-      href="https://react-email-demo-ed2e9vja9-resend.vercel.app/static/aws-logo.png" />
     <meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
     <meta name="x-apple-disable-message-reformatting" />
     <!--$-->
   </head>
-  <body style="background-color:#fff;color:#212121">
+  <body style="background-color:#f4f4f7;color:#1a1a1a;margin:0;padding:0;font-family:${FONT_STACK}">
     <div
       style="display:none;overflow:hidden;line-height:1px;opacity:0;max-height:0;max-width:0"
       data-skip-in-text="true">
-      AWS Email Verification
-      <div>
-         ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿
-      </div>
+      Your Timetable School ID is ready — ${schoolId}
     </div>
     <table
       align="center"
@@ -291,7 +304,7 @@ export const schoolIdPLate = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Trans
       cellpadding="0"
       cellspacing="0"
       role="presentation"
-      style="max-width:37.5em;padding:20px;margin:0 auto;background-color:#eee">
+      style="max-width:37.5em;padding:20px;margin:0 auto;background-color:#f4f4f7">
       <tbody>
         <tr style="width:100%">
           <td>
@@ -302,10 +315,11 @@ export const schoolIdPLate = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Trans
               cellpadding="0"
               cellspacing="0"
               role="presentation"
-              style="background-color:#fff">
+              style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08)">
               <tbody>
                 <tr>
                   <td>
+                    <!-- Header -->
                     <table
                       align="center"
                       width="100%"
@@ -313,20 +327,20 @@ export const schoolIdPLate = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Trans
                       cellpadding="0"
                       cellspacing="0"
                       role="presentation"
-                      style="background-color:#252f3d;display:flex;padding:20px 0;align-items:center;justify-content:center">
+                      style="background:linear-gradient(135deg, ${ACCENT} 0%, ${ACCENT_DARK} 100%);padding:32px 0;text-align:center">
                       <tbody>
                         <tr>
-                          <td>
-                            <img
-                              alt="AWS&#x27;s Logo"
-                              height="45"
-                              src="https://react-email-demo-ed2e9vja9-resend.vercel.app/static/aws-logo.png"
-                              style="display:block;outline:none;border:none;text-decoration:none"
-                              width="75" />
+                          <td align="center">
+                            <span
+                              style="font-family:${FONT_STACK};font-size:22px;font-weight:700;color:#ffffff;letter-spacing:0.5px">
+                              Timetable
+                            </span>
                           </td>
                         </tr>
                       </tbody>
                     </table>
+
+                    <!-- Body -->
                     <table
                       align="center"
                       width="100%"
@@ -334,21 +348,23 @@ export const schoolIdPLate = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Trans
                       cellpadding="0"
                       cellspacing="0"
                       role="presentation"
-                      style="padding:25px 35px">
+                      style="padding:32px 35px">
                       <tbody>
                         <tr>
                           <td>
                             <h1
-                              style="color:#333;font-family:-apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, &#x27;Roboto&#x27;, &#x27;Oxygen&#x27;, &#x27;Ubuntu&#x27;, &#x27;Cantarell&#x27;, &#x27;Fira Sans&#x27;, &#x27;Droid Sans&#x27;, &#x27;Helvetica Neue&#x27;, sans-serif;font-size:20px;font-weight:bold;margin-bottom:15px">
-                              Verify your email address
+                              style="color:#1a1a1a;font-family:${FONT_STACK};font-size:20px;font-weight:700;margin:0 0 15px">
+                              Your school is set up 🎉
                             </h1>
                             <p
-                              style="font-size:14px;line-height:24px;color:#333;font-family:-apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, &#x27;Roboto&#x27;, &#x27;Oxygen&#x27;, &#x27;Ubuntu&#x27;, &#x27;Cantarell&#x27;, &#x27;Fira Sans&#x27;, &#x27;Droid Sans&#x27;, &#x27;Helvetica Neue&#x27;, sans-serif;margin:24px 0;margin-bottom:14px;margin-top:24px;margin-right:0;margin-left:0">
-                              Thanks for setting up the new Timetable account We want to make sure it&#x27;s really
-                              you. Please enter the following verification code
-                              when prompted. If you don&#x27;t want to create an
-                              account, you can ignore this message.
+                              style="font-size:14px;line-height:24px;color:#4b4b4b;font-family:${FONT_STACK};margin:0 0 24px">
+                              Thanks for adding your school's information to Timetable.
+                              Below is your unique School ID. Save it somewhere safe —
+                              you'll need it when inviting teachers and staff, and our
+                              support team may ask for it if you ever need help.
                             </p>
+
+                            <!-- School ID card -->
                             <table
                               align="center"
                               width="100%"
@@ -356,32 +372,36 @@ export const schoolIdPLate = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Trans
                               cellpadding="0"
                               cellspacing="0"
                               role="presentation"
-                              style="display:flex;align-items:center;justify-content:center">
+                              style="background-color:#f4f4f7;border:1px solid #e5e5ea;border-radius:10px;padding:24px 0;margin-bottom:20px">
                               <tbody>
                                 <tr>
-                                  <td>
+                                  <td align="center">
                                     <p
-                                      style="font-size:14px;line-height:24px;color:#333;font-family:-apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, &#x27;Roboto&#x27;, &#x27;Oxygen&#x27;, &#x27;Ubuntu&#x27;, &#x27;Cantarell&#x27;, &#x27;Fira Sans&#x27;, &#x27;Droid Sans&#x27;, &#x27;Helvetica Neue&#x27;, sans-serif;margin:0;font-weight:bold;text-align:center;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
-                                      School Id : 
+                                      style="font-size:12px;line-height:18px;color:#6b6b6b;font-family:${FONT_STACK};margin:0 0 8px;font-weight:600;letter-spacing:1px;text-transform:uppercase">
+                                      School ID
                                     </p>
                                     <p
-                                      style="font-size:36px;line-height:24px;color:#333;font-family:-apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, &#x27;Roboto&#x27;, &#x27;Oxygen&#x27;, &#x27;Ubuntu&#x27;, &#x27;Cantarell&#x27;, &#x27;Fira Sans&#x27;, &#x27;Droid Sans&#x27;, &#x27;Helvetica Neue&#x27;, sans-serif;margin:10px 0;font-weight:bold;text-align:center;margin-top:10px;margin-right:0;margin-bottom:10px;margin-left:0">
-                                      {schoolId}
-                                    </p>
-                                    <p
-                                      style="font-size:14px;line-height:24px;color:#333;font-family:-apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, &#x27;Roboto&#x27;, &#x27;Oxygen&#x27;, &#x27;Ubuntu&#x27;, &#x27;Cantarell&#x27;, &#x27;Fira Sans&#x27;, &#x27;Droid Sans&#x27;, &#x27;Helvetica Neue&#x27;, sans-serif;margin:0px;text-align:center;margin-top:0px;margin-bottom:0px;margin-left:0px;margin-right:0px">
-                                      (This code is valid for only 24Hours)
+                                      style="font-size:32px;line-height:1.3;color:${ACCENT_DARK};font-family:'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;margin:0;font-weight:700;letter-spacing:2px">
+                                      ${schoolId}
                                     </p>
                                   </td>
                                 </tr>
                               </tbody>
                             </table>
+
+                            <p
+                              style="font-size:13px;line-height:20px;color:#8a8a8a;font-family:${FONT_STACK};margin:0;text-align:center">
+                              This ID doesn't expire — it's permanently tied to your
+                              school's account.
+                            </p>
                           </td>
                         </tr>
                       </tbody>
                     </table>
-                    <hr
-                      style="width:100%;border:none;border-top:1px solid #eaeaea" />
+
+                    <hr style="width:100%;border:none;border-top:1px solid #eaeaea;margin:0" />
+
+                    <!-- Security note -->
                     <table
                       align="center"
                       width="100%"
@@ -389,15 +409,14 @@ export const schoolIdPLate = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Trans
                       cellpadding="0"
                       cellspacing="0"
                       role="presentation"
-                      style="padding:25px 35px">
+                      style="padding:24px 35px">
                       <tbody>
                         <tr>
                           <td>
                             <p
-                              style="font-size:14px;line-height:24px;color:#333;font-family:-apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, &#x27;Roboto&#x27;, &#x27;Oxygen&#x27;, &#x27;Ubuntu&#x27;, &#x27;Cantarell&#x27;, &#x27;Fira Sans&#x27;, &#x27;Droid Sans&#x27;, &#x27;Helvetica Neue&#x27;, sans-serif;margin:0px;margin-top:0px;margin-bottom:0px;margin-left:0px;margin-right:0px">
-                                 timetable will never email you and ask
-                              you to disclose or verify your password, credit
-                              card, or banking account number.
+                              style="font-size:13px;line-height:20px;color:#8a8a8a;font-family:${FONT_STACK};margin:0">
+                              Timetable will never email you asking you to disclose or
+                              verify your password, credit card, or banking details.
                             </p>
                           </td>
                         </tr>
@@ -407,24 +426,19 @@ export const schoolIdPLate = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Trans
                 </tr>
               </tbody>
             </table>
+
+            <!-- Footer -->
             <p
-              style="font-size:12px;line-height:24px;color:#333;font-family:-apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, &#x27;Roboto&#x27;, &#x27;Oxygen&#x27;, &#x27;Ubuntu&#x27;, &#x27;Cantarell&#x27;, &#x27;Fira Sans&#x27;, &#x27;Droid Sans&#x27;, &#x27;Helvetica Neue&#x27;, sans-serif;margin:24px 0;padding:0 20px;margin-top:24px;margin-right:0;margin-bottom:24px;margin-left:0">
-              This message was produced and distributed by Amazon Web Services,
-              Inc., 410 Terry Ave. North, Seattle, WA 98109. © 2022, Amazon Web
-              Services, Inc.. All rights reserved. AWS is a registered trademark
-              of<!-- -->
-              <a
-                href="https://amazon.com"
-                style="color:#2754C5;text-decoration-line:none;font-family:-apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, &#x27;Roboto&#x27;, &#x27;Oxygen&#x27;, &#x27;Ubuntu&#x27;, &#x27;Cantarell&#x27;, &#x27;Fira Sans&#x27;, &#x27;Droid Sans&#x27;, &#x27;Helvetica Neue&#x27;, sans-serif;font-size:14px;text-decoration:underline"
-                target="_blank"
-                >Amazon.com</a
-              >, Inc. View our<!-- -->
-              <a
-                href="https://amazon.com"
-                style="color:#2754C5;text-decoration-line:none;font-family:-apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, &#x27;Roboto&#x27;, &#x27;Oxygen&#x27;, &#x27;Ubuntu&#x27;, &#x27;Cantarell&#x27;, &#x27;Fira Sans&#x27;, &#x27;Droid Sans&#x27;, &#x27;Helvetica Neue&#x27;, sans-serif;font-size:14px;text-decoration:underline"
-                target="_blank"
-                >privacy policy</a
-              >.
+              style="font-size:12px;line-height:20px;color:#9a9a9a;font-family:${FONT_STACK};margin:24px 0;padding:0 20px;text-align:center">
+              You're receiving this email because a school was just registered on
+              Timetable using this address. If this wasn't you, you can safely
+              ignore this message.
+            </p>
+            <!-- TODO: replace with your real company name / address / support link -->
+            <p
+              style="font-size:11px;line-height:18px;color:#b5b5b5;font-family:${FONT_STACK};margin:0;padding:0 20px;text-align:center">
+              [Your Company Name] · [Your Company Address] ·
+              <a href="[Your Support URL]" style="color:#9a9a9a;text-decoration:underline">Support</a>
             </p>
           </td>
         </tr>
