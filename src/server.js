@@ -3,7 +3,6 @@ import cors from "cors";
 import "dotenv/config";
 import {connectDb} from "./database/config.js";
 import {router} from "./routes/userRoutes.js";
-// import { lessonRouter } from './routes/lessonsRoute.js';
 import {dataRouter} from "./routes/dataRouter.js";
 import cookieParser from "cookie-parser";
 import {demoRoute} from "./routes/demoRouter.js";
@@ -11,7 +10,7 @@ import {activityRouter} from "./routes/activityRouter.js";
 import {analyticsRouter} from "./routes/analyticsRouter.js";
 import {adminRouter} from "./routes/adminRouter.js";
 import {auditRouter} from "./routes/auditRouter.js";
-import {onboardingRouter} from "./routes/onboardingRouter.js";
+import {settingsRouter} from "./routes/settingsRouter.js";
 
 const app = express();
 const port = process.env.PORT;
@@ -20,23 +19,13 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(
   cors({
-    origin: "http://localhost:5173",
-    methods: ["GET , POST , PUT , DELETE , PATCH"],
+    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     credentials: true,
   }),
 );
 
-app.use(
-  "/api",
-  router,
-  dataRouter,
-  demoRoute,
-  activityRouter,
-  analyticsRouter,
-  adminRouter,
-  auditRouter,
-  onboardingRouter,
-);
+app.use("/api", router, dataRouter, demoRoute, activityRouter, analyticsRouter, adminRouter, auditRouter, settingsRouter);
 
 connectDb();
 
