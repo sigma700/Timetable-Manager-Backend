@@ -11,6 +11,7 @@ import {analyticsRouter} from "./routes/analyticsRouter.js";
 import {adminRouter} from "./routes/adminRouter.js";
 import {auditRouter} from "./routes/auditRouter.js";
 import {settingsRouter} from "./routes/settingsRouter.js";
+import { onboardingRouter } from "./routes/onboardingRouter.js";
 
 const app = express();
 const port = process.env.PORT;
@@ -25,7 +26,7 @@ app.use(
   }),
 );
 
-app.use("/api", router, dataRouter, demoRoute, activityRouter, analyticsRouter, adminRouter, auditRouter, settingsRouter);
+app.use("/api", router, dataRouter, demoRoute, activityRouter, analyticsRouter, adminRouter, auditRouter, settingsRouter , onboardingRouter);
 
 connectDb();
 
