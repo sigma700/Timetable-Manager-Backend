@@ -11,6 +11,7 @@ import {activityRouter} from "./routes/activityRouter.js";
 import {analyticsRouter} from "./routes/analyticsRouter.js";
 import {adminRouter} from "./routes/adminRouter.js";
 import {auditRouter} from "./routes/auditRouter.js";
+import {onboardingRouter} from "./routes/onboardingRouter.js";
 
 const app = express();
 const port = process.env.PORT;
@@ -34,6 +35,7 @@ app.use(
   analyticsRouter,
   adminRouter,
   auditRouter,
+  onboardingRouter,
 );
 
 connectDb();

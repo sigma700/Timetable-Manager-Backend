@@ -12,22 +12,7 @@ import {sendIdMail} from "../../resend/sendEmail.js";
 import {trackActivity} from "../../service/activityService.js";
 import {createAuditLog} from "../../service/auditService.js";
 
-/**
- * POST /api/onboarding   (mount behind checkToken)
- *
- * Replaces the wizard's four sequential calls (list-school → list-subjects →
- * list-classData → list-teachers). Those wrote to the database one step at a
- * time, so a failure on step 3 left a school with no classes, linked to the
- * user, and the router then treated them as fully set up.
- *
- * Contract: after this returns, EITHER the user has a school with all of its
- * subjects, classes and teachers, OR nothing was created. Order of work:
- *   1. who is calling (401) and are they verified (403)
- *   2. validate the whole payload — a bad submission writes nothing (400)
- *   3. write everything in one MongoDB transaction
- *      (falls back to write-then-undo on a standalone server; see persist())
- *   4. only AFTER success: emails, activity feed, audit log — none can fail the request
- */
+
 
 const fireAndForget = (promiseOrFn, context) => {
   Promise.resolve()
@@ -40,19 +25,11 @@ const httpError = (statusCode, code, message) =>
 
 const noSchool = {$or: [{school: null}, {school: {$exists: false}}]};
 
-// ── Step 3 helpers ─────────────────────────────────────────────────────────
 
-/**
- * Everything the setup writes, in the order it must exist. `opts` carries the
- * transaction session when there is one.
- */
 const writeSetup = async (plan, userId, opts, track = {}) => {
   const [school] = await School.create([{name: plan.schoolName}], opts);
   const schoolId = school._id;
-  track.schoolId = schoolId; // so a failure can undo exactly what THIS request created
-
-  // Atomic claim: succeeds only if the user still has no school. This is what
-  // makes a double-click or two open tabs safe — exactly one request wins.
+  track.schoolId = schoolId; 
   const claimed = await User.findOneAndUpdate(
     {_id: userId, ...noSchool},
     {$set: {school: schoolId}},
@@ -146,13 +123,6 @@ const persist = async (plan, userId) => {
     }
   }
 
-  // Fallback: same writes without a session, undone if any step fails.
-  // Not crash-proof (a process kill mid-way can leave a partial school), which
-  // is why submitOnboarding() also cleans up an EMPTY leftover school on retry.
-  //
-  // Undo is limited to the school THIS request created (track.schoolId). It must
-  // never look the school up through the user: if two requests race, the loser's
-  // user.school points at the winner's school, which must not be touched.
   const track = {};
   try {
     return await writeSetup(plan, userId, {}, track);
@@ -200,9 +170,6 @@ export const submitOnboarding = async (req, res) => {
       });
     }
 
-    // A user who already has a school may only continue if it is an EMPTY
-    // leftover (e.g. from the old wizard failing after step 1). Anything with
-    // real data is never touched.
     if (user.school) {
       const leftoverId = user.school; // capture first: never re-read it after mutating
       if (!(await isEmptySchool(leftoverId))) {
