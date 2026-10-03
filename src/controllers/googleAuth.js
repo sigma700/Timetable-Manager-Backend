@@ -2,6 +2,7 @@
 // import {sendError} from "../utils/sendError.js";
 // import {trackActivity} from "../service/activityService.js";
 // import {createAuditLog} from "../service/auditService.js";
+import {randomBytes} from "node:crypto";
 import {User} from "../database/model/users.js";
 import {genJwTok} from "../../utils/genJwToken.js";
 import {trackActivity} from "../../service/activityService.js";
@@ -14,7 +15,18 @@ const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
 // ─── Step 1: Redirect to Google ───────────────────────────────────────────────
 export const googleRedirect = (req, res) => {
+  // CSRF protection: bind this login attempt to this browser.
+  const state = randomBytes(24).toString("hex");
+  res.cookie("g_oauth_state", state, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax", // must be sent on Google's top-level redirect back to us
+    maxAge: 10 * 60 * 1000,
+    path: "/",
+  });
+
   const params = new URLSearchParams({
+    state,
     client_id: GOOGLE_CLIENT_ID,
     redirect_uri: GOOGLE_REDIRECT_URI,
     response_type: "code",
@@ -28,7 +40,13 @@ export const googleRedirect = (req, res) => {
 
 // ─── Step 2: Handle callback ──────────────────────────────────────────────────
 export const googleCallback = async (req, res) => {
-  const {code, error} = req.query;
+  const {code, error, state} = req.query;
+
+  const expectedState = req.cookies?.g_oauth_state;
+  res.clearCookie("g_oauth_state", {path: "/"});
+  if (!state || !expectedState || state !== expectedState) {
+    return res.redirect(`${FRONTEND_URL}/login?error=invalid_state`);
+  }
 
   if (error || !code) {
     return res.redirect(`${FRONTEND_URL}/login?error=google_denied`);
@@ -68,10 +86,17 @@ export const googleCallback = async (req, res) => {
     if (!profile.email) {
       return res.redirect(`${FRONTEND_URL}/login?error=no_email`);
     }
+    // Only trust the address if Google says the person has proven they own it.
+    // Without this, an unverified Google-side address could be linked to (or
+    // used to take over) an existing Protiba account with the same email.
+    if (profile.email_verified !== true) {
+      return res.redirect(`${FRONTEND_URL}/login?error=email_not_verified`);
+    }
+    const googleEmail = String(profile.email).trim().toLowerCase();
 
     // Upsert user — find by googleId first, then by email
     let user = await User.findOne({
-      $or: [{googleId: profile.sub}, {email: profile.email}],
+      $or: [{googleId: profile.sub}, {email: googleEmail}],
     });
 
     const isNewUser = !user;
@@ -84,7 +109,7 @@ export const googleCallback = async (req, res) => {
           profile.family_name ||
           profile.name?.split(" ").slice(1).join(" ") ||
           "",
-        email: profile.email,
+        email: googleEmail,
         googleId: profile.sub,
         avatar: profile.picture || null,
         isVerified: true, // Google emails are pre-verified
@@ -94,6 +119,10 @@ export const googleCallback = async (req, res) => {
     } else if (!user.googleId) {
       // Existing email user — link Google account
       user.googleId = profile.sub;
+      // If the existing account was never verified, whoever registered it never
+      // proved they own this address (pre-hijack attack). Google has now proven
+      // the real owner, so drop the unproven password.
+      if (!user.isVerified) user.password = null;
       user.isVerified = true;
       if (!user.avatar && profile.picture) user.avatar = profile.picture;
       await user.save();
@@ -130,7 +159,8 @@ export const googleCallback = async (req, res) => {
     });
 
     // Redirect to frontend home
-    res.redirect(`${FRONTEND_URL}/home`);
+    // /app is the Gate: it routes the user to /verify, /onboarding or the product.
+    res.redirect(`${FRONTEND_URL}/app`);
   } catch (err) {
     console.error("[Google OAuth] Callback error:", err);
     res.redirect(`${FRONTEND_URL}/login?error=server_error`);

@@ -8,29 +8,29 @@ import {
   welcomeMailPlate,
 } from "./mailTemplate.js";
 //email for account verification after the user has set up an account !
-// export const sendVerMail = async (verToken, email) => {
-// 	try {
-// 		const { data, error } = await resend.emails.send({
-// 			from: 'Acme <onboarding@resend.dev>',
-// 			to: [email],
-// 			subject: 'Verify your email!',
-// 			html: verifMailPlate.replace('{verToken}', verToken),
-// 		});
+export const sendVerMail = async (verToken, email) => {
+	try {
+		const { data, error } = await resend.emails.send({
+			from: 'Acme <onboarding@resend.dev>',
+			to: [email],
+			subject: 'Verify your email!',
+			html: verifMailPlate.replace('{verToken}', verToken),
+		});
 
-// 		console.log(`Sending the email to ${email}`);
+		console.log(`Sending the email to ${email}`);
 
-// 		if (error) {
-// 			console.error('Resend API error:', error);
-// 			throw new Error(`Failed to send email: ${error.message}`);
-// 		}
+		if (error) {
+			console.error('Resend API error:', error);
+			throw new Error(`Failed to send email: ${error.message}`);
+		}
 
-// 		console.log(`Email sent successfully to ${email}`, data);
-// 		return data;
-// 	} catch (error) {
-// 		console.error('Error sending verification email:', error);
-// 		throw error; // Re-throw to let the caller handle it
-// 	}
-// };
+		console.log(`Email sent successfully to ${email}`, data);
+		return data;
+	} catch (error) {
+		console.error('Error sending verification email:', error);
+		throw error; // Re-throw to let the caller handle it
+	}
+};
 
 export const senWelMail = async (email, firstName) => {
   try {

@@ -26,16 +26,33 @@ async function getUserSchoolId(userId) {
   if (!user) {
     throw Object.assign(new Error("User not found"), {statusCode: 404});
   }
+  // Server-side enforcement of the "verified" stage: a user manipulating the
+  // frontend router still cannot read or change school data.
+  if (!user.isVerified) {
+    throw Object.assign(new Error("Please verify your email to continue"), {
+      statusCode: 403,
+      code: "EMAIL_NOT_VERIFIED",
+    });
+  }
   if (!user.school) {
     throw Object.assign(new Error("User is not associated with any school"), {
       statusCode: 400,
+      code: "SCHOOL_REQUIRED",
     });
   }
   return user.school._id;
 }
 
 function sendCaughtError(res, error, fallbackMessage = "Something went wrong") {
-  sendError(res, error?.message || fallbackMessage, error?.statusCode || 500);
+  const status = error?.statusCode || 500;
+  if (error?.code === "EMAIL_NOT_VERIFIED" || error?.code === "SCHOOL_REQUIRED" || error?.code === "SCHOOL_EXISTS") {
+    return res.status(status).json({
+      success: false,
+      code: error.code,
+      message: error.message,
+    });
+  }
+  sendError(res, error?.message || fallbackMessage, status);
 }
 
 function escapeRegExp(str) {
@@ -79,15 +96,57 @@ export const listSchool = async (req, res) => {
       return sendError(res, "School name is required", 400);
     }
 
+    // Onboarding step 1. Must be a verified user who does not yet own a school.
+    // Previously: no verification check, and re-running the wizard created a
+    // second School and silently re-pointed user.school at it, orphaning the
+    // first school's teachers, classes, subjects and timetables.
+    const currentUser = userId
+      ? await User.findById(userId).select("isVerified school")
+      : null;
+    if (!currentUser) {
+      return sendError(res, "Not authenticated", 401);
+    }
+    if (!currentUser.isVerified) {
+      throw Object.assign(new Error("Please verify your email to continue"), {
+        statusCode: 403,
+        code: "EMAIL_NOT_VERIFIED",
+      });
+    }
+    if (currentUser.school) {
+      const existingId = currentUser.school;
+      const [subjects, classes, teachers, tables] = await Promise.all([
+        Subject.countDocuments({school: existingId}),
+        ClassData.countDocuments({school: existingId}),
+        ListOfTechers.countDocuments({school: existingId}),
+        GenTable.countDocuments({school: existingId}),
+      ]);
+
+      // Setup was interrupted before any data was saved (e.g. the wizard failed
+      // after step 1): let the user resume on the SAME school instead of either
+      // creating a duplicate or locking them out.
+      if (subjects + classes + teachers + tables === 0) {
+        const existing = await School.findById(existingId);
+        if (existing) {
+          return sendSucess(res, "School setup resumed", {
+            school: existing,
+            userId,
+          });
+        }
+      } else {
+        throw Object.assign(new Error("Your school is already set up"), {
+          statusCode: 409,
+          code: "SCHOOL_EXISTS",
+        });
+      }
+    }
+
     const createdSchool = await School.create({name: name.trim()});
 
-    if (userId) {
-      await User.findByIdAndUpdate(
-        userId,
-        {school: createdSchool._id},
-        {new: true},
-      );
-    }
+    await User.findByIdAndUpdate(
+      userId,
+      {school: createdSchool._id},
+      {new: true},
+    );
 
     const schoolId = createdSchool._id;
 

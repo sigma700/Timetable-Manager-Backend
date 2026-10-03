@@ -14,6 +14,14 @@ export const getInstitutionOverviewHandler = async (req, res) => {
   try {
     const user = await User.findById(req.userId).populate("school");
 
+    if (user && !user.isVerified) {
+      return res.status(403).json({
+        success: false,
+        code: "EMAIL_NOT_VERIFIED",
+        message: "Please verify your email to continue.",
+      });
+    }
+
     if (!user || !user.school) {
       return sendError(res, "User is not associated with any school", 400);
     }
@@ -42,6 +50,14 @@ export const getInstitutionOverviewHandler = async (req, res) => {
 export const getTeacherWorkloadHandler = async (req, res) => {
   try {
     const user = await User.findById(req.userId).populate("school");
+
+    if (user && !user.isVerified) {
+      return res.status(403).json({
+        success: false,
+        code: "EMAIL_NOT_VERIFIED",
+        message: "Please verify your email to continue.",
+      });
+    }
 
     if (!user || !user.school) {
       return sendError(res, "User is not associated with any school", 400);
@@ -72,6 +88,14 @@ export const getSubjectDistributionHandler = async (req, res) => {
   try {
     const user = await User.findById(req.userId).populate("school");
 
+    if (user && !user.isVerified) {
+      return res.status(403).json({
+        success: false,
+        code: "EMAIL_NOT_VERIFIED",
+        message: "Please verify your email to continue.",
+      });
+    }
+
     if (!user || !user.school) {
       return sendError(res, "User is not associated with any school", 400);
     }
@@ -100,6 +124,14 @@ export const getSubjectDistributionHandler = async (req, res) => {
 export const getTimetableHealthHandler = async (req, res) => {
   try {
     const user = await User.findById(req.userId).populate("school");
+
+    if (user && !user.isVerified) {
+      return res.status(403).json({
+        success: false,
+        code: "EMAIL_NOT_VERIFIED",
+        message: "Please verify your email to continue.",
+      });
+    }
 
     if (!user || !user.school) {
       return sendError(res, "User is not associated with any school", 400);

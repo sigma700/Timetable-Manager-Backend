@@ -19,9 +19,28 @@ const userSchema = new Schema(
     resetPasscodeToken: String,
     verToken: String,
     verTokenExpDate: Date,
+    // Verification hardening (new)
+    verAttempts: {type: Number, default: 0}, // wrong guesses against the current code
+    verSentAt: Date, // when the current code was issued (resend cooldown)
     timetables: {type: mongoose.Schema.Types.String, ref: "Timetable"},
   },
-  {timestamps: true},
+  {
+    timestamps: true,
+    // Safety net: even if a controller forgets toSafeUser(), secrets never
+    // reach the wire through res.json(userDoc).
+    toJSON: {
+      transform: (_doc, ret) => {
+        delete ret.password;
+        delete ret.verToken;
+        delete ret.verTokenExpDate;
+        delete ret.verAttempts;
+        delete ret.verSentAt;
+        delete ret.resetPasscodeToken;
+        delete ret.__v;
+        return ret;
+      },
+    },
+  },
 );
 
 // Sparse index on googleId — allows null values without unique constraint violations
