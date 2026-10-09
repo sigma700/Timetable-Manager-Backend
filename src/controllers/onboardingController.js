@@ -149,7 +149,7 @@ export const submitOnboarding = async (req, res) => {
   try {
     // 1. Who is this?
     if (!userId) return sendError(res, "Not authenticated", 401);
-    const user = await User.findById(userId).select("isVerified school");
+    const user = await User.findById(userId).select("isVerified school email");
     if (!user) return sendError(res, "User not found", 401);
     if (!user.isVerified) {
       return res.status(403).json({
@@ -192,7 +192,7 @@ export const submitOnboarding = async (req, res) => {
       ipAddress: req.ip || req.headers?.["x-forwarded-for"] || null,
       userAgent: req.headers?.["user-agent"] || null,
     };
-    fireAndForget(() => sendIdMail(schoolId), "sendIdMail");
+    fireAndForget(() => sendIdMail(schoolId, user.email), "sendIdMail");
     fireAndForget(
       () =>
         trackActivity({

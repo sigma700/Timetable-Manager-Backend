@@ -2,14 +2,12 @@
 import 'dotenv/config';
 import { Resend } from 'resend';
 
-const key = process.env.RESEND_KEY;
+const key = process.env.RESEND_API_KEY || process.env.RESEND_KEY;
+const from =
+  process.env.RESEND_FROM_EMAIL?.trim() ||
+  (process.env.NODE_ENV === "production"
+    ? null
+    : "Timetable <onboarding@resend.dev>");
+const resend = key ? new Resend(key) : null;
 
-const resend = new Resend(key);
-
-console.log('Resdend was connected successfully !');
-
-if (!resend) {
-	console.log('Resend could not be connected !');
-}
-
-export { resend };
+export { from, resend };

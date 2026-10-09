@@ -20,7 +20,9 @@ const getDemo = async (req, res) => {
 			time: time,
 		});
 
-		sendDemoMail(fullName, email, schName, date, time);
+		void sendDemoMail(fullName, email, schName, date, time).catch((error) => {
+			console.error("[demo email failed]", error?.message || error);
+		});
 
 		sendSucess(res, 'Demo was created !', createdDemo, 200);
 	} catch (error) {

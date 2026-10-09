@@ -16,15 +16,34 @@ import { onboardingRouter } from "./routes/onboardingRouter.js";
 const app = express();
 const port = process.env.PORT;
 
-app.use(express.json());
-app.use(cookieParser());
+const configuredFrontendOrigins = [
+  process.env.FRONTEND_URL,
+  process.env.FRONTED_URL,
+]
+  .filter((value) => value?.trim())
+  .flatMap((value) => value.split(","))
+  .map((value) => new URL(value.trim()).origin);
+const allowedOrigins = [
+  ...new Set(
+    configuredFrontendOrigins.length
+      ? configuredFrontendOrigins
+      : [
+          process.env.NODE_ENV === "production"
+            ? "https://protiba.onrender.com"
+            : "http://localhost:5173",
+        ],
+  ),
+];
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "https://protiba.onrender.com",
+    origin: allowedOrigins,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     credentials: true,
   }),
 );
+app.use(express.json());
+app.use(cookieParser());
 
 app.use("/api", router, dataRouter, demoRoute, activityRouter, analyticsRouter, adminRouter, auditRouter, settingsRouter , onboardingRouter);
 

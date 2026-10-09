@@ -23,18 +23,15 @@ const sameCode = (a, b) => {
   return x.length === y.length && timingSafeEqual(x, y);
 };
 
-// Email delivery must never decide whether signup succeeds. If it fails the
-// user can press "Resend code". In development the code is logged so the flow
-// is testable without a mail provider.
-const deliverCode = async (user, code) => {
-  try {
-    await sendVerMail(code, user.email);
-  } catch (err) {
+// Email delivery must not block signup or verification responses. If it fails
+// the user can press "Resend code".
+const deliverCode = (user, code) => {
+  void sendVerMail(code, user.email).catch((err) => {
     console.error("[verification email failed]", err?.message || err);
     if (process.env.NODE_ENV !== "production") {
       console.log(`[DEV ONLY] verification code for ${user.email}: ${code}`);
     }
-  }
+  });
 };
 
 
@@ -75,7 +72,7 @@ export const createTeacher = async (req, res) => {
     });
 
     genJwTok(res, teacher._id);
-    await deliverCode(teacher, verToken);
+    deliverCode(teacher, verToken);
 
     trackActivity({
       event: "USER_REGISTERED",
@@ -262,13 +259,11 @@ export const veriAcc = async (req, res) => {
       schoolId: user.school || null,
     });
 
-    // The account is already verified at this point; a failed welcome email
-    // must not turn a successful verification into an error response.
-    try {
-      await senWelMail(user.email, user.firstName);
-    } catch (err) {
+    // The account is already verified; sending a welcome email must not delay
+    // or change the successful verification response.
+    void senWelMail(user.email, user.firstName).catch((err) => {
       console.error("[welcome email failed]", err?.message || err);
-    }
+    });
 
     sendSucess(res, "Verified !", toSafeUser(user), 200);
   } catch (error) {
@@ -304,7 +299,7 @@ export const resendVerification = async (req, res) => {
     user.verAttempts = 0;
     await user.save();
 
-    await deliverCode(user, verToken);
+    deliverCode(user, verToken);
     sendSucess(res, "A new code has been sent !", null, 200);
   } catch (error) {
     console.log(error);

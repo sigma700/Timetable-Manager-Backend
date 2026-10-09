@@ -101,7 +101,7 @@ export const listSchool = async (req, res) => {
     // second School and silently re-pointed user.school at it, orphaning the
     // first school's teachers, classes, subjects and timetables.
     const currentUser = userId
-      ? await User.findById(userId).select("isVerified school")
+      ? await User.findById(userId).select("isVerified school email")
       : null;
     if (!currentUser) {
       return sendError(res, "Not authenticated", 401);
@@ -150,7 +150,7 @@ export const listSchool = async (req, res) => {
 
     const schoolId = createdSchool._id;
 
-    await sendIdMail(schoolId);
+    fireAndForget(sendIdMail(schoolId, currentUser.email), "sendIdMail");
 
     fireAndForget(
       trackActivity({

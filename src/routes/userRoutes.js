@@ -3,6 +3,7 @@ import {
   createTeacher,
   login,
   logout,
+  resendVerification,
   veriAcc,
 } from "../controllers/userController.js";
 import {googleRedirect, googleCallback} from "../controllers/googleAuth.js";
@@ -14,7 +15,8 @@ export const router = Router();
 // ─── Email / Password ─────────────────────────────────────────────────────────
 router.post("/create-account", createTeacher);
 router.post("/login/:school", login);
-router.post("/verify", veriAcc);
+router.post("/verify", verifyToken, veriAcc);
+router.post("/resend-verification", verifyToken, resendVerification);
 router.post("/logout", verifyToken, logout);
 router.get("/check-Auth", verifyToken, checkAuth);
 

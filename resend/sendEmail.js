@@ -1,100 +1,90 @@
 //here is where we will send the email
 
-import {resend} from "./config.js";
+import {from, resend} from "./config.js";
 import {
   demoMailPlate,
   schoolIdPLate,
   verifMailPlate,
   welcomeMailPlate,
 } from "./mailTemplate.js";
-//email for account verification after the user has set up an account !
+
+const send = async (message) => {
+  if (!resend) {
+    throw new Error("Configure RESEND_API_KEY (or RESEND_KEY) to send email.");
+  }
+  if (!from) {
+    throw new Error(
+      "Configure RESEND_FROM_EMAIL with an address on a verified Resend domain.",
+    );
+  }
+
+  const {data, error} = await resend.emails.send({from, ...message});
+  if (error) {
+    throw new Error(`Resend failed to send email: ${error.message}`);
+  }
+  if (!data) {
+    throw new Error("Resend did not return a successful email result.");
+  }
+  return data;
+};
+
+const escapeHtml = (value) =>
+  String(value ?? "").replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  })[character]);
+
 export const sendVerMail = async (verToken, email) => {
-	try {
-		const { data, error } = await resend.emails.send({
-			from: 'Acme <onboarding@resend.dev>',
-			to: [email],
-			subject: 'Verify your email!',
-			html: verifMailPlate.replace('{verToken}', verToken),
-		});
-
-		console.log(`Sending the email to ${email}`);
-
-		if (error) {
-			console.error('Resend API error:', error);
-			throw new Error(`Failed to send email: ${error.message}`);
-		}
-
-		console.log(`Email sent successfully to ${email}`, data);
-		return data;
-	} catch (error) {
-		console.error('Error sending verification email:', error);
-		throw error; // Re-throw to let the caller handle it
-	}
+  return send({
+    to: [email],
+    subject: "Verify your email!",
+    html: verifMailPlate.replace("{verToken}", escapeHtml(verToken)),
+  });
 };
 
 export const senWelMail = async (email, firstName) => {
-  try {
-    const {data, error} = await resend.emails.send({
-      from: "Acme <onboarding@resend.dev>",
-      to: ["allankirimi65@gmail.com"],
-      subject: "Welcome to EduFind",
-      html: welcomeMailPlate.replace("{firstName}", firstName),
-    });
-  } catch (error) {
-    console.log("Error sending verification error", error);
-  }
+  return send({
+    to: [email],
+    subject: "Welcome to Timetable",
+    html: welcomeMailPlate.replace("{firstName}", escapeHtml(firstName)),
+  });
 };
+
 export const sendDemoMail = async (fullName, email, schName, date, time) => {
-  try {
-    const emailContent = demoMailPlate
-      .replace(/{fullName}/g, fullName)
-      .replace(/{email}/g, email)
-      .replace(/{schoolName}/g, schName)
-      .replace(/{date}/g, date)
-      .replace(/{time}/g, time);
+  const emailContent = demoMailPlate
+    .replace(/{fullName}/g, escapeHtml(fullName))
+    .replace(/{email}/g, escapeHtml(email))
+    .replace(/{schoolName}/g, escapeHtml(schName))
+    .replace(/{date}/g, escapeHtml(date))
+    .replace(/{time}/g, escapeHtml(time));
 
-    const {data, error} = await resend.emails.send({
-      from: "Acme <onboarding@resend.dev>",
-      to: ["allankirimi65@gmail.com"],
-      subject: `Demo Request from ${fullName}`,
+  const notificationEmail =
+    process.env.DEMO_NOTIFICATION_EMAIL || "allankirimi65@gmail.com";
+
+  const [notification, confirmation] = await Promise.all([
+    send({
+      to: [notificationEmail],
+      replyTo: email,
+      subject: `Demo Request from ${String(fullName).trim()}`,
       html: emailContent,
-    });
+    }),
+    send({
+      to: [email],
+      subject: "We received your demo request",
+      text: `Hi ${String(fullName).trim()},\n\nThanks for requesting a Timetable demo for ${String(schName).trim()}. We have received your request for ${String(date).trim()} at ${String(time).trim()} and will contact you shortly.\n\nThe Timetable team`,
+    }),
+  ]);
 
-    if (error) {
-      console.error("Resend error:", error);
-    }
-
-    //thid is the
-    console.log("Demo email sent successfully:", data);
-    return data;
-  } catch (error) {
-    console.error("Error sending demo email:", error);
-    throw error;
-  }
+  return {notification, confirmation};
 };
 
-export const sendIdMail = async (schoolId) => {
-  try {
-    const {data, error} = await resend.emails.send({
-      from: "Acme <onboarding@resend.dev>",
-      to: ["allankirimi65@gmail.com"], // set it to mine before production but after that i will add the feature such that the actual user is the one who will get the legit email
-      subject: "Here is your schoolId",
-
-      html: schoolIdPLate(schoolId),
-    });
-
-    // Resend's SDK resolves with { data, error } on API-level failures —
-    // it does NOT throw for those. The original code destructured `error`
-    // and never checked it, so a bad API key, invalid recipient, etc.
-    // would silently do nothing and report success.
-    if (error) {
-      console.error("Resend API error sending schoolId email:", error);
-      return {sent: false, error};
-    }
-
-    return {sent: true, data};
-  } catch (err) {
-    console.error("An error occurred with sending the email!", err);
-    return {sent: false, error: err};
-  }
+export const sendIdMail = async (schoolId, email) => {
+  return send({
+    to: [email],
+    subject: "Here is your school ID",
+    html: schoolIdPLate(schoolId),
+  });
 };
