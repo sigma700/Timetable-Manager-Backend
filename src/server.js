@@ -22,17 +22,15 @@ const configuredFrontendOrigins = [
 ]
   .filter((value) => value?.trim())
   .flatMap((value) => value.split(","))
-  .map((value) => new URL(value.trim()).origin);
+  .map((value) => value.trim())
+  .filter(Boolean)
+  .map((value) => new URL(value).origin);
+const defaultFrontendOrigins = ["https://protiba.onrender.com"];
+if (process.env.NODE_ENV !== "production") {
+  defaultFrontendOrigins.push("http://localhost:5173");
+}
 const allowedOrigins = [
-  ...new Set(
-    configuredFrontendOrigins.length
-      ? configuredFrontendOrigins
-      : [
-          process.env.NODE_ENV === "production"
-            ? "https://protiba.onrender.com"
-            : "http://localhost:5173",
-        ],
-  ),
+  ...new Set([...defaultFrontendOrigins, ...configuredFrontendOrigins]),
 ];
 
 app.use(
