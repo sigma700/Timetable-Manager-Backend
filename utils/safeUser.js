@@ -8,6 +8,8 @@
  * `isVerified` and `school` are the two facts the frontend uses to decide
  * which experience a user belongs in (see frontend authStore.deriveStage).
  */
+import {EMAIL_SENDING_DISABLED} from "../resend/sendEmail.js";
+
 export const toSafeUser = (user) => {
   if (!user) return null;
   const u = typeof user.toObject === "function" ? user.toObject() : user;
@@ -33,7 +35,7 @@ export const toSafeUser = (user) => {
     avatar: u.avatar ?? null,
     accountType: u.accountType,
     contacts: u.contacts ?? null,
-    isVerified: Boolean(u.isVerified),
+    isVerified: EMAIL_SENDING_DISABLED ? true : Boolean(u.isVerified),
     school: u.school ? String(populatedSchool?._id ?? u.school) : null,
     institutionName: populatedSchool?.name ?? null,
     timetables,
