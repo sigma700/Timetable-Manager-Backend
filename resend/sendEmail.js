@@ -8,7 +8,19 @@ import {
   welcomeMailPlate,
 } from "./mailTemplate.js";
 
+// TEMPORARILY DISABLED: email sending is turned off.
+// Flip this to false to restore normal email delivery.
+export const EMAIL_SENDING_DISABLED = true;
+
 const send = async (message) => {
+  if (EMAIL_SENDING_DISABLED) {
+    console.info("[email] Email sending temporarily disabled; skipping send.", {
+      to: message?.to,
+      subject: message?.subject,
+    });
+    return {id: "email-disabled"};
+  }
+
   if (!resend) {
     throw new Error("Configure RESEND_API_KEY (or RESEND_KEY) to send email.");
   }

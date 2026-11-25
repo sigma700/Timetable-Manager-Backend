@@ -9,7 +9,7 @@ import {sendError, sendSucess} from "../../utils/sendError.js";
 import {trackActivity} from "../../service/activityService.js";
 import {createAuditLog} from "../../service/auditService.js";
 import {timingSafeEqual} from "node:crypto";
-import {sendVerMail, senWelMail} from "../../resend/sendEmail.js";
+import {EMAIL_SENDING_DISABLED, sendVerMail, senWelMail} from "../../resend/sendEmail.js";
 import {toSafeUser} from "../../utils/safeUser.js";
 
 const CODE_TTL_MS = 24 * 60 * 60 * 1000; // was 24 * 60 * 1000 = 24 MINUTES
@@ -59,20 +59,25 @@ export const createTeacher = async (req, res) => {
     // isVerified stays FALSE (schema default). Previously this controller set
     // `teacher.isVerified = true` in memory without saving: the client was told
     // the account was verified while the database said otherwise.
+    // When email sending is temporarily disabled, auto-verify so signup/login
+    // is not blocked on a code the user cannot receive.
     const teacher = await User.create({
       firstName,
       lastName,
       email: cleanEmail,
       password: hashedPass,
-      verToken,
-      verTokenExpDate: Date.now() + CODE_TTL_MS,
-      verSentAt: new Date(),
+      isVerified: EMAIL_SENDING_DISABLED,
+      verToken: EMAIL_SENDING_DISABLED ? undefined : verToken,
+      verTokenExpDate: EMAIL_SENDING_DISABLED ? undefined : Date.now() + CODE_TTL_MS,
+      verSentAt: EMAIL_SENDING_DISABLED ? undefined : new Date(),
       verAttempts: 0,
       contacts,
     });
 
     genJwTok(res, teacher._id);
-    deliverCode(teacher, verToken);
+    if (!EMAIL_SENDING_DISABLED) {
+      deliverCode(teacher, verToken);
+    }
 
     trackActivity({
       event: "USER_REGISTERED",
@@ -280,6 +285,15 @@ export const resendVerification = async (req, res) => {
     if (!user) return sendError(res, "User not found !", 401);
     if (user.isVerified) {
       return sendSucess(res, "Already verified !", toSafeUser(user), 200);
+    }
+
+    if (EMAIL_SENDING_DISABLED) {
+      user.isVerified = true;
+      user.verToken = undefined;
+      user.verTokenExpDate = undefined;
+      user.verAttempts = 0;
+      await user.save();
+      return sendSucess(res, "Email verification temporarily disabled; account verified.", toSafeUser(user), 200);
     }
 
     const waitMs =

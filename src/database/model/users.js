@@ -6,7 +6,7 @@ const userSchema = new Schema(
     lastName: {type: String, required: true},
     email: {type: String, required: true, unique: true},
     password: {type: String, default: null}, // null for OAuth users
-    googleId: {type: String, default: null, sparse: true},
+    googleId: {type: String, default: null},
     avatar: {type: String, default: null},
     isVerified: {type: Boolean, default: false},
     accountType: {

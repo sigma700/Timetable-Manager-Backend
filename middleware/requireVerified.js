@@ -1,5 +1,6 @@
 import {User} from "../src/database/model/users.js";
 import {sendError} from "../utils/sendError.js";
+import {EMAIL_SENDING_DISABLED} from "../resend/sendEmail.js";
 
 /**
  * Blocks product endpoints for accounts whose email is not verified.
@@ -20,7 +21,7 @@ export const requireVerified = async (req, res, next) => {
     const user = await User.findById(req.userId).select("isVerified");
     if (!user) return sendError(res, "User not found", 401);
 
-    if (!user.isVerified) {
+    if (!user.isVerified && !EMAIL_SENDING_DISABLED) {
       return res.status(403).json({
         success: false,
         code: "EMAIL_NOT_VERIFIED",
