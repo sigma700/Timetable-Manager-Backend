@@ -4,6 +4,7 @@ import {getTeacherWorkload} from "../../service/teacherAnalyticsService.js";
 import {getSubjectDistribution} from "../../service/subjectAnalyticsService.js";
 import {getTimetableHealth} from "../../service/timetableHealthService.js";
 import {sendError, sendSucess} from "../../utils/sendError.js";
+import {EMAIL_SENDING_DISABLED} from "../../resend/sendEmail.js";
 
 /**
  * GET /api/analytics/overview
@@ -14,7 +15,7 @@ export const getInstitutionOverviewHandler = async (req, res) => {
   try {
     const user = await User.findById(req.userId).populate("school");
 
-    if (user && !user.isVerified) {
+    if (user && !user.isVerified && !EMAIL_SENDING_DISABLED) {
       return res.status(403).json({
         success: false,
         code: "EMAIL_NOT_VERIFIED",
@@ -51,7 +52,7 @@ export const getTeacherWorkloadHandler = async (req, res) => {
   try {
     const user = await User.findById(req.userId).populate("school");
 
-    if (user && !user.isVerified) {
+    if (user && !user.isVerified && !EMAIL_SENDING_DISABLED) {
       return res.status(403).json({
         success: false,
         code: "EMAIL_NOT_VERIFIED",
@@ -88,7 +89,7 @@ export const getSubjectDistributionHandler = async (req, res) => {
   try {
     const user = await User.findById(req.userId).populate("school");
 
-    if (user && !user.isVerified) {
+    if (user && !user.isVerified && !EMAIL_SENDING_DISABLED) {
       return res.status(403).json({
         success: false,
         code: "EMAIL_NOT_VERIFIED",
@@ -125,7 +126,7 @@ export const getTimetableHealthHandler = async (req, res) => {
   try {
     const user = await User.findById(req.userId).populate("school");
 
-    if (user && !user.isVerified) {
+    if (user && !user.isVerified && !EMAIL_SENDING_DISABLED) {
       return res.status(403).json({
         success: false,
         code: "EMAIL_NOT_VERIFIED",

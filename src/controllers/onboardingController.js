@@ -8,7 +8,7 @@ import {GenTable} from "../database/model/fullTable.js";
 import {sendError, sendSucess} from "../../utils/sendError.js";
 import {toSafeUser} from "../../utils/safeUser.js";
 import {buildOnboardingPlan, summariseErrors} from "../../utils/onboardingPlan.js";
-import {sendIdMail} from "../../resend/sendEmail.js";
+import {EMAIL_SENDING_DISABLED, sendIdMail} from "../../resend/sendEmail.js";
 import {trackActivity} from "../../service/activityService.js";
 import {createAuditLog} from "../../service/auditService.js";
 
@@ -151,7 +151,7 @@ export const submitOnboarding = async (req, res) => {
     if (!userId) return sendError(res, "Not authenticated", 401);
     const user = await User.findById(userId).select("isVerified school email");
     if (!user) return sendError(res, "User not found", 401);
-    if (!user.isVerified) {
+    if (!user.isVerified && !EMAIL_SENDING_DISABLED) {
       return res.status(403).json({
         success: false,
         code: "EMAIL_NOT_VERIFIED",

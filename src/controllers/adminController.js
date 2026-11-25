@@ -9,7 +9,7 @@ import {ListOfTechers} from "../database/model/teachers.js";
 import {generateSimpleTimetable} from "../../service/genTable.js";
 import {sendError, sendSucess} from "../../utils/sendError.js";
 import {User} from "../database/model/users.js";
-import {sendIdMail} from "../../resend/sendEmail.js";
+import {EMAIL_SENDING_DISABLED, sendIdMail} from "../../resend/sendEmail.js";
 import {trackActivity} from "../../service/activityService.js";
 import {createAuditLog} from "../../service/auditService.js";
 import calculateTime from "../../utils/calculateTime.js";
@@ -28,7 +28,7 @@ async function getUserSchoolId(userId) {
   }
   // Server-side enforcement of the "verified" stage: a user manipulating the
   // frontend router still cannot read or change school data.
-  if (!user.isVerified) {
+  if (!user.isVerified && !EMAIL_SENDING_DISABLED) {
     throw Object.assign(new Error("Please verify your email to continue"), {
       statusCode: 403,
       code: "EMAIL_NOT_VERIFIED",
@@ -106,7 +106,7 @@ export const listSchool = async (req, res) => {
     if (!currentUser) {
       return sendError(res, "Not authenticated", 401);
     }
-    if (!currentUser.isVerified) {
+    if (!currentUser.isVerified && !EMAIL_SENDING_DISABLED) {
       throw Object.assign(new Error("Please verify your email to continue"), {
         statusCode: 403,
         code: "EMAIL_NOT_VERIFIED",

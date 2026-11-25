@@ -211,6 +211,15 @@ export const veriAcc = async (req, res) => {
       return sendSucess(res, "Already verified !", toSafeUser(user), 200);
     }
 
+    if (EMAIL_SENDING_DISABLED) {
+      user.isVerified = true;
+      user.verToken = undefined;
+      user.verTokenExpDate = undefined;
+      user.verAttempts = 0;
+      await user.save();
+      return sendSucess(res, "Email verification temporarily disabled; account verified.", toSafeUser(user), 200);
+    }
+
     const expired = !user.verTokenExpDate || user.verTokenExpDate < Date.now();
     if (!user.verToken || expired) {
       return res.status(401).json({
